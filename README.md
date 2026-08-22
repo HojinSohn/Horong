@@ -1,6 +1,7 @@
 # Horong-v2
 
-A personal AI agent, self-hosted on a VPS, reachable on Discord and Email.
+A personal AI agent, self-hosted on a VPS, reachable on Discord (Email
+blocked on an upstream bug — see Status).
 Built on [Hermes Agent](https://github.com/NousResearch/hermes-agent)
 (NousResearch), installed natively — no Docker, no custom backend.
 
@@ -28,8 +29,9 @@ service (`hermes-gateway`), confirmed surviving a reboot:
   password used by the old HORONG's `email-connector` is configured
   but the `EMAIL_*` lines in `~/.hermes/.env` are commented out with a
   `#DISABLED_` prefix (not deleted) so the config is ready for a future
-  retry without leaving a background worker thread hung. Deferred, not
-  part of this project's initial scope.
+  retry without leaving a background worker thread hung. Deferred. It
+  was in this plan's scope and was not delivered — see
+  `docs/known-issues.md`.
 
 Not yet done: everything else from the old HORONG project (custom
 tools, skills, cron, escalation model, item-match triggers) — none of
