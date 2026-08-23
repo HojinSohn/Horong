@@ -59,6 +59,11 @@ alternative for occasional, auth-free access: keep it bound to
 9119:localhost:9119` — which preserves the `Host: localhost` header
 that a reverse proxy would otherwise rewrite.)
 
-The agent's terminal is scoped to `/root/hermes-workspace`
-(`terminal.cwd` in `config.yaml`), not root's home directory — see
-`docs/known-issues.md` #3 for why that matters and what it doesn't fix.
+The dashboard's Files page is locked to `/root/hermes-workspace` via
+`HERMES_DASHBOARD_FILES_ROOT` in `~/.hermes/.env` — verified live
+(`locked_root` in the API response, and a direct attempt to browse
+`/root/.ssh` correctly returns `403 Path outside managed files root`).
+`terminal.cwd` was also set to the same directory, but that's a
+separate setting controlling the agent's default shell working
+directory, not the Files page — see `docs/known-issues.md` #3 for what
+each one does and doesn't cover.
