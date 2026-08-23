@@ -36,3 +36,29 @@ service (`hermes-gateway`), confirmed surviving a reboot:
 Not yet done: everything else from the old HORONG project (custom
 tools, skills, cron, escalation model, item-match triggers) — none of
 it carries over automatically; each would be its own future spec.
+
+## Web dashboard (2026-08-23)
+
+Hermes's built-in web dashboard (`hermes dashboard`) is live as a
+persistent `systemd --user` service (`hermes-dashboard`), bound
+directly to the VPS's Tailscale IP (`100.109.58.59:9119`) rather than
+loopback — reachable from any device on the tailnet, gated behind
+Hermes's built-in username/password auth (the `basic` provider).
+Credentials live only in `~/.hermes/.env` on the VPS, never in this
+repo.
+
+**Pitfall hit and avoided — don't front this with `tailscale serve`:**
+a reverse proxy (Tailscale Serve, or any other) rewrites the `Host`
+header to the public hostname, which trips Hermes's own
+DNS-rebinding guard (`Invalid Host header`) — it only trusts the exact
+host it was bound to. The doc-correct pattern for persistent remote
+access is binding directly to the Tailscale IP with the built-in
+username/password provider, which is what's running now. (An
+alternative for occasional, auth-free access: keep it bound to
+`127.0.0.1` and reach it via a literal SSH port-forward — `ssh -L
+9119:localhost:9119` — which preserves the `Host: localhost` header
+that a reverse proxy would otherwise rewrite.)
+
+The agent's terminal is scoped to `/root/hermes-workspace`
+(`terminal.cwd` in `config.yaml`), not root's home directory — see
+`docs/known-issues.md` #3 for why that matters and what it doesn't fix.
