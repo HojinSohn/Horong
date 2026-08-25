@@ -77,12 +77,106 @@ effect of the existing fetch call all break that):
   that already succeeded wait in the existing `_seen_uids` set instead
   of being re-fetched.
 
-**Current state:** implemented in a scratch clone of
-`NousResearch/hermes-agent` (not this repo — a real external project),
-uncommitted. Not yet tested, not yet committed, and explicitly **not
-yet opened as a PR** per instruction — this is a paused, in-progress
-external contribution, tracked here so the context survives a session
-break.
+**Current state:** implemented in a local clone of
+`NousResearch/hermes-agent` at `~/hermes-agent` on this Mac (not this
+repo — a real external project, see "Working on Hermes Agent itself"
+below), uncommitted. Not yet tested, not yet committed, and explicitly
+**not yet opened as a PR** per instruction — this is a paused,
+in-progress external contribution, tracked here so the context
+survives a session break.
+
+## Working on Hermes Agent itself (2026-08-25)
+
+Hermes Agent is a large external open-source project
+(`NousResearch/hermes-agent`), not something this repo vendors or
+forks into its own history (see "Is it possible to have the exact
+codebase in repo" — deliberately declined; it'd diverge from every
+`hermes update` and blur what this repo is for). It has its own local
+clone, separate from `Horong-v2`:
+
+**`/Users/hojinsohn/hermes-agent`** — a normal git repo, currently on
+branch `fix/email-mark-seen-server-side` with the Email fix above
+still uncommitted.
+
+### Project structure (the parts that matter for customizing)
+
+```
+hermes-agent/
+├── run_agent.py         # AIAgent — the core conversation loop, tool dispatch
+├── cli.py                # HermesCLI — interactive TUI
+├── toolsets.py           # which tools are available per surface (hermes-cli, hermes-telegram, ...)
+├── hermes_state.py        # SQLite session DB (search, history)
+│
+├── agent/                # core internals: prompt assembly, context compression, memory
+├── tools/                 # built-in tools (file ops, web search, terminal, vision, ...)
+│   └── registry.py            # central tool registry — how a new tool gets wired in
+│
+├── gateway/               # the messaging gateway (this is what runs on the VPS)
+│   ├── run.py                 # GatewayRunner — platform lifecycle, message routing, cron
+│   ├── config.py               # how platforms get configured (env vars / config.yaml)
+│   └── platforms/               # some channel adapters live directly here
+│       └── ADDING_A_PLATFORM.md    # the actual guide for extending this
+│
+├── plugins/
+│   ├── platforms/               # most channel adapters live here instead (discord, email, slack, telegram, whatsapp, ...)
+│   │   └── email/adapter.py         # the file the Email fix above touches
+│   ├── dashboard_auth/           # the basic-auth provider used for the web dashboard
+│   ├── memory/                   # memory backends (honcho, mem0, etc.)
+│   └── ...                       # browser, cron_providers, image_gen, kanban, etc.
+│
+├── skills/                # bundled skills (markdown playbooks, copied to ~/.hermes/skills/ on install)
+├── optional-skills/        # official but not-on-by-default skills
+├── web/                    # the dashboard's frontend (the UI at the Tailscale URL above)
+├── tests/                  # test suite — mirrors this structure (tests/gateway/, tests/agent/, etc.)
+└── AGENTS.md               # the project's own dev guide, written for AI coding assistants
+```
+
+Two things worth internalizing:
+
+1. **Channels split across two places** — `gateway/platforms/` for some
+   (Signal, WeChat, WhatsApp Cloud, BlueBubbles...), `plugins/platforms/<name>/adapter.py`
+   for others (Discord, Email, Slack, Telegram, WhatsApp...). Both are
+   real; check `gateway/platforms/ADDING_A_PLATFORM.md` before assuming
+   a pattern.
+2. **The plugin path is the intended extension point.** Per that doc: a
+   new platform (or most new capabilities generally) should be a plugin
+   implementing `BasePlatformAdapter` + `register(ctx)` — "zero changes
+   to core Hermes code." The Email fix works within that same existing
+   shape, not against it.
+
+### Working loop
+
+- **Branch per change**, matching the project's convention:
+  `fix/...`, `feat/...`, etc.
+- **Edit and test locally** — `scripts/run_tests.sh` or `pytest tests/ -v`,
+  no VPS needed (mirrors the file you touched, e.g.
+  `tests/gateway/test_email.py` for the email adapter).
+- **Live-test against the real VPS gateway** when needed: `scp` just the
+  one changed file over, restart `hermes-gateway`, check `journalctl` —
+  no need to redeploy or re-clone the whole thing:
+  ```bash
+  scp ~/hermes-agent/plugins/platforms/email/adapter.py \
+    root@<vps-ip>:/usr/local/lib/hermes-agent/plugins/platforms/email/adapter.py
+  ssh horong-vps 'export XDG_RUNTIME_DIR=/run/user/0 && systemctl --user restart hermes-gateway'
+  ```
+  (Easy to revert — the live install at `/usr/local/lib/hermes-agent`
+  is itself a git clone; `git checkout` the file there if a live test
+  doesn't pan out.)
+- **To actually contribute upstream**: push this clone to a fork on
+  GitHub, open the PR from there — `CONTRIBUTING.md` (in the repo root)
+  has the exact branch-naming and commit-message conventions
+  (Conventional Commits).
+- **The VPS's own copy never needs direct edits** — it's a deploy
+  target, updated via `hermes update` once something's actually merged
+  upstream, or via the one-off `scp` above when test-driving a
+  not-yet-merged fix.
+
+### SSH access
+
+`ssh horong-vps` now works as a shortcut (added to `~/.ssh/config`,
+`root@<vps-ip>` via the `id_ed25519` key — `id_rsa` is also
+present but passphrase-protected and not what actually authenticates).
+Same alias works for VS Code's Remote-SSH extension.
 
 ## Web dashboard (2026-08-23)
 
