@@ -3,6 +3,7 @@ backed by one ACP session (one `hermes acp` conversation) per connection."""
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from collections.abc import Sequence
@@ -30,6 +31,8 @@ async def handle_connection(ws: ServerConnection, hermes_cmd: Sequence[str], wor
                     await session.send_prompt(message["text"])
         finally:
             forwarder.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await forwarder
 
 
 def build_handler(hermes_cmd: Sequence[str], workspace_dir: str):
