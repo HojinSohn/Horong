@@ -9,4 +9,10 @@ describe('App', () => {
     expect(screen.getByLabelText('Horong chat column')).toBeInTheDocument()
     expect(screen.getByLabelText('Finance and stocks')).toBeInTheDocument()
   })
+
+  it('renders mock widget titles in the side columns', () => {
+    render(<App />)
+    expect(screen.getAllByText('Job Tracking')[0]).toBeInTheDocument()
+    expect(screen.getAllByText('Finance')[0]).toBeInTheDocument()
+  })
 })

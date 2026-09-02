@@ -1,0 +1,15 @@
+export interface MockWidget {
+  title: string
+  lines: string[]
+}
+
+export const leftWidgets: MockWidget[] = [
+  { title: 'Job Tracking', lines: ['Acme Corp — interview scheduled', 'Globex — applied'] },
+  { title: 'Job Search', lines: ['3 new matches for "platform engineer"'] },
+  { title: 'Notes', lines: ['Follow up with recruiter Friday'] },
+]
+
+export const rightWidgets: MockWidget[] = [
+  { title: 'Finance', lines: ['Checking: $4,213.10', 'Savings: $12,900.00'] },
+  { title: 'Stock Profile', lines: ['AAPL 231.14 +1.2%', 'NVDA 118.02 -0.4%'] },
+]

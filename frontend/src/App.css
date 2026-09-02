@@ -38,3 +38,21 @@ body {
   padding: 12px;
   overflow-y: auto;
 }
+
+.widget-card {
+  margin-bottom: 16px;
+}
+
+.widget-card h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  margin: 0 0 6px;
+}
+
+.widget-card ul {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 0.9rem;
+}
