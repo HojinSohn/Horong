@@ -12,7 +12,7 @@ describe('App', () => {
 
   it('renders mock widget titles in the side columns', () => {
     render(<App />)
-    expect(screen.getAllByText('Job Tracking')[0]).toBeInTheDocument()
-    expect(screen.getAllByText('Finance')[0]).toBeInTheDocument()
+    expect(screen.getByText('Job Tracking')).toBeInTheDocument()
+    expect(screen.getByText('Finance')).toBeInTheDocument()
   })
 })
