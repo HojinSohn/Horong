@@ -35,7 +35,14 @@ export function useChatSocket(url: string) {
           return prev
         }
         // data.type === 'error'
-        return [...prev, { role: 'assistant', text: `Error: ${data.message}`, streaming: false }]
+        // First, finalize any in-flight streaming message
+        let result = prev
+        const last = prev[prev.length - 1]
+        if (last?.role === 'assistant' && last.streaming) {
+          result = [...prev.slice(0, -1), { ...last, streaming: false }]
+        }
+        // Then append the error message
+        return [...result, { role: 'assistant', text: `Error: ${data.message}`, streaming: false }]
       })
     }
     return () => socket.close()
@@ -43,7 +50,9 @@ export function useChatSocket(url: string) {
 
   const sendPrompt = useCallback((text: string) => {
     setMessages((prev) => [...prev, { role: 'user', text, streaming: false }])
-    socketRef.current?.send(JSON.stringify({ type: 'prompt', text }))
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ type: 'prompt', text }))
+    }
   }, [])
 
   return { messages, connected, sendPrompt }
