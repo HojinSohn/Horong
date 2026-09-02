@@ -1,0 +1,40 @@
+:root {
+  color-scheme: dark;
+  --bg: #14161a;
+  --panel: #1c1f26;
+  --text: #e6e6e6;
+  --accent: #6c8cff;
+  --border: #2a2e37;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  gap: 12px;
+  height: 100vh;
+  padding: 12px;
+}
+
+.dashboard > aside,
+.dashboard > main {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-y: auto;
+}
