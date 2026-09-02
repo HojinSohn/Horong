@@ -1,0 +1,50 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { BridgeToClient } from '../lib/protocol'
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  text: string
+  streaming: boolean
+}
+
+export function useChatSocket(url: string) {
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [connected, setConnected] = useState(false)
+  const socketRef = useRef<WebSocket | null>(null)
+
+  useEffect(() => {
+    const socket = new WebSocket(url)
+    socketRef.current = socket
+    socket.onopen = () => setConnected(true)
+    socket.onclose = () => setConnected(false)
+    socket.onmessage = (event) => {
+      const data: BridgeToClient = JSON.parse(event.data)
+      setMessages((prev) => {
+        if (data.type === 'chunk') {
+          const last = prev[prev.length - 1]
+          if (last?.role === 'assistant' && last.streaming) {
+            return [...prev.slice(0, -1), { ...last, text: last.text + data.text }]
+          }
+          return [...prev, { role: 'assistant', text: data.text, streaming: true }]
+        }
+        if (data.type === 'done') {
+          const last = prev[prev.length - 1]
+          if (last?.role === 'assistant' && last.streaming) {
+            return [...prev.slice(0, -1), { ...last, streaming: false }]
+          }
+          return prev
+        }
+        // data.type === 'error'
+        return [...prev, { role: 'assistant', text: `Error: ${data.message}`, streaming: false }]
+      })
+    }
+    return () => socket.close()
+  }, [url])
+
+  const sendPrompt = useCallback((text: string) => {
+    setMessages((prev) => [...prev, { role: 'user', text, streaming: false }])
+    socketRef.current?.send(JSON.stringify({ type: 'prompt', text }))
+  }, [])
+
+  return { messages, connected, sendPrompt }
+}
