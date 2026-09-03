@@ -11,7 +11,7 @@ RestartSec=2
 EnvironmentFile=/root/hermes-dashboard-finance/finance.env
 Environment=FINANCE_HOST=100.109.58.59
 Environment=FINANCE_PORT=8766
-Environment=PLAID_ENV=sandbox
+Environment=PLAID_ENV=production
 Environment=FINANCE_DB_PATH=/root/hermes-dashboard-finance/finance.db
 
 [Install]
