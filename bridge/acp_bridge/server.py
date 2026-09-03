@@ -46,6 +46,9 @@ def build_handler(hermes_cmd: Sequence[str], workspace_dir: str):
 
 
 async def run_server(host: str, port: int, hermes_cmd: Sequence[str], workspace_dir: str) -> None:
-    async with serve(build_handler(hermes_cmd, workspace_dir), host, port):
+    # Origin check: only the dashboard frontend may open a connection. Without
+    # this, any page reachable on the tailnet could open a WebSocket here and
+    # drive Horong with auto-approved tool execution as root.
+    async with serve(build_handler(hermes_cmd, workspace_dir), host, port, origins=["http://localhost:3000"]):
         logger.info("bridge listening on %s:%s", host, port)
         await asyncio.Future()  # run forever

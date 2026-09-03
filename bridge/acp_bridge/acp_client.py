@@ -83,6 +83,26 @@ class HorongSession:
         self.session_id = session_id
         self.updates = updates
 
+    # ponytail: known race — `done` can be enqueued before the final `chunk`.
+    # `acp`'s notification dispatcher runs each incoming `session/update` as a
+    # fire-and-forget `asyncio.create_task(...)`, not awaited inline. So
+    # `connection.prompt()` below can return (its response arrives on the same
+    # transport, but isn't gated on those tasks finishing) before the task
+    # handling the *last* chunk's `session_update` callback has actually run
+    # and put its chunk on `self.updates`. If `done` is enqueued first, a
+    # client reading the queue in order sees `done` before that final chunk.
+    # Reproduced against a 5-chunk fixture: 4/15 runs. Against the existing
+    # 1-chunk fixture: 0/30 runs — with only one chunk there's nothing for
+    # `done` to race ahead of, which is why the current test never catches
+    # this. Not observed against live `hermes acp` (real chunk timing leaves
+    # enough of a gap for the dispatched task to run first), so this is
+    # latent, not active, today.
+    # Upgrade path if it ever bites: either (a) track expected vs. received
+    # chunk count from `session_update`'s payload (e.g. `stop_reason`) and
+    # hold `done` until they match, or (b) have `session_update` hand back an
+    # awaitable per dispatched task and await all pending ones here before
+    # enqueueing `done`. Both require change on top of `acp`'s dispatch, which
+    # is more surgery than this fix wave covers.
     async def send_prompt(self, text: str) -> None:
         try:
             await self._connection.prompt(prompt=[text_block(text)], session_id=self.session_id)

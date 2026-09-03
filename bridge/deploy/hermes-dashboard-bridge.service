@@ -1,6 +1,7 @@
 [Unit]
 Description=Horong custom-dashboard ACP bridge
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
 WorkingDirectory=/root/hermes-dashboard-bridge
