@@ -32,6 +32,33 @@ def test_save_cursor_persists_across_loads(storage):
     assert storage.load_item().cursor == "cursor-xyz"
 
 
+def test_save_item_clears_stale_transactions_from_a_previously_linked_item(storage):
+    storage.save_item("item-sandbox", "access-sandbox")
+    storage.apply_sync(
+        added=[
+            {
+                "transaction_id": "sandbox-t1",
+                "date": "2026-08-27",
+                "name": "United Airlines",
+                "amount": 500,
+                "category": "Travel",
+                "pending": False,
+            }
+        ],
+        modified=[],
+        removed_ids=[],
+    )
+    assert len(storage.load_transactions()) == 1
+
+    # Re-linking (e.g. switching from Sandbox to a real Production bank)
+    # must not leave the previous item's cached transactions behind — they
+    # belong to an item that's no longer linked and would otherwise show up
+    # forever alongside the new item's real data.
+    storage.save_item("item-production", "access-production")
+
+    assert storage.load_transactions() == []
+
+
 def test_apply_sync_upserts_added_and_modified_and_deletes_removed(storage):
     storage.save_item("item-1", "access-token")
     txn = {

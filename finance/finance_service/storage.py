@@ -53,6 +53,11 @@ class FinanceStorage:
             "access_token_encrypted = excluded.access_token_encrypted, cursor = NULL",
             (item_id, encrypted),
         )
+        # A (re)link replaces the single supported item — any cached
+        # transactions belong to whichever item was linked before and are no
+        # longer valid (e.g. Sandbox fixtures surviving a switch to a real
+        # Production bank).
+        self._conn.execute("DELETE FROM transactions")
         self._conn.commit()
 
     def load_item(self) -> PlaidItem | None:
