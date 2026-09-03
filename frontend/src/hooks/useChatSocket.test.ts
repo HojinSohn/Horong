@@ -107,7 +107,7 @@ describe('useChatSocket', () => {
     ])
   })
 
-  it('does not send prompt when socket is not yet open', () => {
+  it('does not send prompt when socket is not yet open, and shows a visible error', () => {
     // Clear instances to have a clean slate
     FakeWebSocket.instances = []
 
@@ -125,10 +125,14 @@ describe('useChatSocket', () => {
 
     // Socket should not have sent anything because readyState was CONNECTING
     expect(socket.sent).toEqual([])
-    // But the message should still be recorded in the UI
+    // The message should still be recorded, plus a visible error saying it
+    // wasn't sent (previously it silently vanished).
     expect(result.current.messages).toEqual([
       { role: 'user', text: 'early message', streaming: false },
+      { role: 'assistant', text: "Error: message wasn't sent — not connected to Horong.", streaming: false },
     ])
+    // Nothing was actually sent, so there's nothing to wait on.
+    expect(result.current.pending).toBe(false)
   })
 
   it('sends prompt after socket opens', () => {
@@ -155,5 +159,54 @@ describe('useChatSocket', () => {
     expect(result.current.messages).toEqual([
       { role: 'user', text: 'hello', streaming: false },
     ])
+  })
+
+  it('is pending from sendPrompt until the first chunk arrives', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    expect(result.current.pending).toBe(false)
+
+    act(() => {
+      result.current.sendPrompt('hello')
+    })
+    expect(result.current.pending).toBe(true)
+
+    act(() => {
+      socket.emitMessage({ type: 'chunk', text: 'Hi' })
+    })
+    expect(result.current.pending).toBe(false)
+  })
+
+  it('clears pending on a done with zero chunks', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    act(() => {
+      result.current.sendPrompt('hello')
+    })
+    expect(result.current.pending).toBe(true)
+
+    act(() => {
+      socket.emitMessage({ type: 'done' })
+    })
+    expect(result.current.pending).toBe(false)
+  })
+
+  it('reports connectionState as connecting, then open, then closed', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    expect(result.current.connectionState).toBe('connecting')
+
+    act(() => {
+      socket.onopen?.()
+    })
+    expect(result.current.connectionState).toBe('open')
+
+    act(() => {
+      socket.close()
+    })
+    expect(result.current.connectionState).toBe('closed')
   })
 })

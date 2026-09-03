@@ -7,18 +7,23 @@ export interface ChatMessage {
   streaming: boolean
 }
 
+export type ConnectionState = 'connecting' | 'open' | 'closed'
+
 export function useChatSocket(url: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [connected, setConnected] = useState(false)
+  const [connectionState, setConnectionState] = useState<ConnectionState>('connecting')
+  const [pending, setPending] = useState(false)
   const socketRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
     const socket = new WebSocket(url)
     socketRef.current = socket
-    socket.onopen = () => setConnected(true)
-    socket.onclose = () => setConnected(false)
+    socket.onopen = () => setConnectionState('open')
+    socket.onclose = () => setConnectionState('closed')
     socket.onmessage = (event) => {
       const data: BridgeToClient = JSON.parse(event.data)
+      // A reply of any kind ends the "waiting for the first chunk" window.
+      setPending(false)
       setMessages((prev) => {
         if (data.type === 'chunk') {
           const last = prev[prev.length - 1]
@@ -52,8 +57,14 @@ export function useChatSocket(url: string) {
     setMessages((prev) => [...prev, { role: 'user', text, streaming: false }])
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify({ type: 'prompt', text }))
+      setPending(true)
+    } else {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: "Error: message wasn't sent — not connected to Horong.", streaming: false },
+      ])
     }
   }, [])
 
-  return { messages, connected, sendPrompt }
+  return { messages, connectionState, pending, sendPrompt }
 }

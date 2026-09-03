@@ -1,12 +1,18 @@
 import { useState, type FormEvent } from 'react'
-import { useChatSocket } from '../hooks/useChatSocket'
+import { useChatSocket, type ConnectionState } from '../hooks/useChatSocket'
 
 interface ChatPanelProps {
   wsUrl: string
 }
 
+function statusText(connectionState: ConnectionState) {
+  if (connectionState === 'open') return 'Connected'
+  if (connectionState === 'closed') return 'Disconnected — reload the page to reconnect'
+  return 'Connecting…'
+}
+
 export function ChatPanel({ wsUrl }: ChatPanelProps) {
-  const { messages, connected, sendPrompt } = useChatSocket(wsUrl)
+  const { messages, connectionState, pending, sendPrompt } = useChatSocket(wsUrl)
   const [draft, setDraft] = useState('')
 
   const submit = (event: FormEvent) => {
@@ -18,13 +24,14 @@ export function ChatPanel({ wsUrl }: ChatPanelProps) {
 
   return (
     <div className="chat-panel">
-      <div className="chat-status">{connected ? 'Connected' : 'Connecting…'}</div>
+      <div className="chat-status">{statusText(connectionState)}</div>
       <ul className="chat-messages">
         {messages.map((message, index) => (
           <li key={index} className={`chat-message chat-message--${message.role}`}>
             {message.text}
           </li>
         ))}
+        {pending && <li className="chat-message chat-message--assistant chat-message--pending">Horong is thinking…</li>}
       </ul>
       <form onSubmit={submit}>
         <input
