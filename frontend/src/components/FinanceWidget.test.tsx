@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as financeApi from '../lib/financeApi'
 import { FinanceWidget } from './FinanceWidget'
@@ -129,6 +129,39 @@ describe('FinanceWidget', () => {
 
     await screen.findByText('Coffee Shop')
     expect(screen.queryByText('Pending')).not.toBeInTheDocument()
+  })
+
+  it('shares one Weekly/Monthly toggle across both charts, defaulting to Weekly', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({
+      linked: true,
+      needsReauth: false,
+      transactions: [
+        { id: 't1', date: '2026-08-27', name: 'United Airlines', amount: 500, category: 'Travel', pending: false },
+      ],
+    })
+
+    render(<FinanceWidget />)
+
+    expect(await screen.findByText('Spending by category (this week)')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Weekly' })).toHaveClass('active')
+  })
+
+  it('switches both charts to the monthly period when Monthly is clicked', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({
+      linked: true,
+      needsReauth: false,
+      transactions: [
+        { id: 't1', date: '2026-08-27', name: 'United Airlines', amount: 500, category: 'Travel', pending: false },
+      ],
+    })
+
+    render(<FinanceWidget />)
+    await screen.findByText('Spending by category (this week)')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Monthly' }))
+
+    expect(await screen.findByText('Spending by category (this month)')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Monthly' })).toHaveClass('active')
   })
 
   it('exchanges the public token and reloads transactions on Link success', async () => {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePlaidLink } from 'react-plaid-link'
 import { exchangePublicToken, fetchLinkToken, fetchTransactions, type Transaction } from '../lib/financeApi'
-import { currencyFormatter } from '../lib/spending'
+import { currencyFormatter, type Period } from '../lib/spending'
 import { SpendingBarChart } from './SpendingBarChart'
 import { SpendingPieChart } from './SpendingPieChart'
 
@@ -29,6 +29,7 @@ export function FinanceWidget() {
   const [needsReauth, setNeedsReauth] = useState(false)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [period, setPeriod] = useState<Period>('week')
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -77,8 +78,20 @@ export function FinanceWidget() {
       {error && <p className="finance-error">{error}</p>}
       {linked && transactions.length > 0 && (
         <>
-          <SpendingPieChart transactions={transactions} />
-          <SpendingBarChart transactions={transactions} />
+          <div className="finance-period-toggle" role="group" aria-label="Chart period">
+            <button type="button" className={period === 'week' ? 'active' : undefined} onClick={() => setPeriod('week')}>
+              Weekly
+            </button>
+            <button
+              type="button"
+              className={period === 'month' ? 'active' : undefined}
+              onClick={() => setPeriod('month')}
+            >
+              Monthly
+            </button>
+          </div>
+          <SpendingPieChart transactions={transactions} period={period} />
+          <SpendingBarChart transactions={transactions} period={period} />
         </>
       )}
       {linked && (

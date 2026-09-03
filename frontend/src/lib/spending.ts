@@ -71,3 +71,14 @@ export function groupSpendingByPeriod(transactions: Transaction[], period: Perio
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, total]) => ({ label: periodLabel(key, period), total }))
 }
+
+// Keeps every transaction (spend and credits alike) that falls in the most
+// recent week/month present in the data — "most recent we have data for",
+// not "the real calendar's current week," so it stays correct against
+// Sandbox test data that isn't necessarily dated near today.
+export function filterToLatestPeriod(transactions: Transaction[], period: Period): Transaction[] {
+  if (transactions.length === 0) return []
+  const keys = transactions.map((txn) => periodKey(txn.date, period))
+  const latestKey = keys.reduce((max, key) => (key > max ? key : max))
+  return transactions.filter((_txn, index) => keys[index] === latestKey)
+}

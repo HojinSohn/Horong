@@ -69,16 +69,10 @@ body {
   margin: 0 0 4px;
 }
 
-.finance-chart__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
 .finance-period-toggle {
   display: flex;
   gap: 2px;
+  margin-top: 12px;
 }
 
 .finance-period-toggle button {

@@ -1,6 +1,6 @@
 import { Cell, Legend, Pie, PieChart, Tooltip } from 'recharts'
 import type { Transaction } from '../lib/financeApi'
-import { currencyFormatter, groupSpendingByCategory } from '../lib/spending'
+import { currencyFormatter, filterToLatestPeriod, groupSpendingByCategory, type Period } from '../lib/spending'
 
 // dataviz categorical palette, dark-mode steps, slots 1-6 — validated
 // (CVD + contrast) against this app's --panel surface (#1c1f26).
@@ -8,15 +8,16 @@ const SERIES_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#
 
 interface SpendingPieChartProps {
   transactions: Transaction[]
+  period: Period
 }
 
-export function SpendingPieChart({ transactions }: SpendingPieChartProps) {
-  const data = groupSpendingByCategory(transactions)
+export function SpendingPieChart({ transactions, period }: SpendingPieChartProps) {
+  const data = groupSpendingByCategory(filterToLatestPeriod(transactions, period))
   if (data.length === 0) return null
 
   return (
     <div className="finance-chart">
-      <h3>Spending by category</h3>
+      <h3>Spending by category ({period === 'week' ? 'this week' : 'this month'})</h3>
       <PieChart width={260} height={200}>
         <Pie
           data={data}

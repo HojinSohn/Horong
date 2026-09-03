@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupSpendingByCategory, groupSpendingByPeriod } from './spending'
+import { filterToLatestPeriod, groupSpendingByCategory, groupSpendingByPeriod } from './spending'
 import type { Transaction } from './financeApi'
 
 function txn(overrides: Partial<Transaction>): Transaction {
@@ -106,5 +106,39 @@ describe('groupSpendingByPeriod', () => {
     )
 
     expect(result).toEqual([{ label: 'Aug 2026', total: 100 }])
+  })
+})
+
+describe('filterToLatestPeriod', () => {
+  it('keeps only transactions in the most recent month', () => {
+    const august = txn({ id: 'aug', date: '2026-08-15', amount: 10 })
+    const july = txn({ id: 'jul', date: '2026-07-20', amount: 5 })
+
+    const result = filterToLatestPeriod([july, august], 'month')
+
+    expect(result).toEqual([august])
+  })
+
+  it('keeps only transactions in the most recent week (Monday-start)', () => {
+    // 2026-08-10 is a Monday; 2026-08-03 is the prior Monday.
+    const laterWeek = txn({ id: 'later', date: '2026-08-11', amount: 10 })
+    const earlierWeek = txn({ id: 'earlier', date: '2026-08-03', amount: 5 })
+
+    const result = filterToLatestPeriod([earlierWeek, laterWeek], 'week')
+
+    expect(result).toEqual([laterWeek])
+  })
+
+  it('includes credits/refunds that fall in the latest period (filtering is by date, not sign)', () => {
+    const spend = txn({ id: 'spend', date: '2026-08-15', amount: 10 })
+    const refund = txn({ id: 'refund', date: '2026-08-16', amount: -10 })
+
+    const result = filterToLatestPeriod([spend, refund], 'month')
+
+    expect(result).toEqual([spend, refund])
+  })
+
+  it('returns an empty array for no transactions', () => {
+    expect(filterToLatestPeriod([], 'month')).toEqual([])
   })
 })
