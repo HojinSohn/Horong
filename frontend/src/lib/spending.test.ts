@@ -43,16 +43,7 @@ describe('groupSpendingByCategory', () => {
     expect(result).toEqual([{ category: 'Uncategorized', total: 20 }])
   })
 
-  it('excludes internal credit-card-payment transfers (category "Payment")', () => {
-    const result = groupSpendingByCategory([
-      txn({ category: 'Payment', amount: 500, name: 'Mobile Banking payment to CREDIT CARD' }),
-      txn({ category: 'Food and Drink', amount: 12 }),
-    ])
-
-    expect(result).toEqual([{ category: 'Food and Drink', total: 12 }])
-  })
-
-  it('excludes "Mobile Banking payment" transfers even when Plaid categorizes them as "Transfer"', () => {
+  it('excludes "Mobile Banking payment" transfers by name, regardless of category', () => {
     const result = groupSpendingByCategory([
       txn({
         category: 'Transfer',
@@ -65,13 +56,17 @@ describe('groupSpendingByCategory', () => {
     expect(result).toEqual([{ category: 'Food and Drink', total: 12 }])
   })
 
-  it('keeps other "Transfer"-categorized spend that is not a card payment (e.g. a mis-categorized purchase or a Zelle payment)', () => {
+  it('keeps other spend that shares a category with the excluded transfer but isn\'t one (e.g. rent under "Payment", a mis-categorized purchase or a Zelle payment under "Transfer")', () => {
     const result = groupSpendingByCategory([
+      txn({ category: 'Payment', amount: 704.99, name: 'PURCHASE 0814 APF*Crestview Managemen' }),
       txn({ category: 'Transfer', amount: 8.5, name: 'ARA PURDUE BOILERMAKER MK' }),
       txn({ category: 'Transfer', amount: 40, name: 'Zelle payment to SUKMIN for "Pott"; Conf# xy880uh0i' }),
     ])
 
-    expect(result).toEqual([{ category: 'Transfer', total: 48.5 }])
+    expect(result).toEqual([
+      { category: 'Payment', total: 704.99 },
+      { category: 'Transfer', total: 48.5 },
+    ])
   })
 
   it('folds categories beyond the top 5 into Other', () => {
@@ -139,10 +134,10 @@ describe('groupSpendingByPeriod', () => {
     expect(result).toEqual([{ label: 'Aug 2026', total: 100 }])
   })
 
-  it('excludes internal credit-card-payment transfers (category "Payment")', () => {
+  it('excludes "Mobile Banking payment" transfers by name, regardless of category', () => {
     const result = groupSpendingByPeriod(
       [
-        txn({ date: '2026-08-10', amount: 500, category: 'Payment' }),
+        txn({ date: '2026-08-10', amount: 500, category: 'Transfer', name: 'Mobile Banking payment to CRD 1729' }),
         txn({ date: '2026-08-10', amount: 12, category: 'Food and Drink' }),
       ],
       'month',
@@ -166,10 +161,16 @@ describe('totalIncome', () => {
     expect(result).toBe(2000)
   })
 
-  it('excludes internal credit-card-payment transfers (category "Payment")', () => {
+  it('excludes "Mobile Banking payment" transfers by name, regardless of category', () => {
     const result = totalIncome(
       [
-        txn({ id: 'card-payment-received', date: '2026-08-15', amount: -500, category: 'Payment' }),
+        txn({
+          id: 'card-payment-received',
+          date: '2026-08-15',
+          amount: -500,
+          category: 'Transfer',
+          name: 'Mobile Banking payment to CRD 1729',
+        }),
         txn({ id: 'paycheck', date: '2026-08-16', amount: -2000, category: 'Payroll' }),
       ],
       'month',

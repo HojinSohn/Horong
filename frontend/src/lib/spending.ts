@@ -11,16 +11,16 @@ export interface CategoryTotal {
 // the tail into "Other" rather than seat a 6th+ named category.
 const MAX_PIE_SEGMENTS = 6
 
-// A transfer between your own accounts (e.g. paying off a credit card from
+// A transfer between your own accounts (paying off a credit card from
 // checking) — the underlying purchases are already counted individually on
 // the card side, so this isn't real spend or income and would double-count
-// if included. Plaid's legacy "Payment" category flags this cleanly, but in
-// practice bank-generated names like "Mobile Banking payment to CRD ..."
-// often land in the much broader "Transfer" category instead — a category
-// that also holds real spend (e.g. a mis-categorized purchase) and Zelle
-// payments to/from other people, so that whole category can't be excluded.
+// if included. Matched by the bank-generated name pattern only: neither
+// Plaid category this shows up under ("Transfer" in practice, sometimes
+// "Payment") is safe to exclude wholesale — both also hold real spend (a
+// mis-categorized purchase, a recurring bill like rent, Zelle payments to
+// other people).
 function isCardPaymentTransfer(txn: Transaction): boolean {
-  return txn.category === 'Payment' || /^mobile banking payment\b/i.test(txn.name)
+  return /^mobile banking payment\b/i.test(txn.name)
 }
 
 export function groupSpendingByCategory(transactions: Transaction[]): CategoryTotal[] {
