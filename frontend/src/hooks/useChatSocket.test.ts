@@ -14,8 +14,10 @@ class FakeWebSocket {
   onmessage: ((event: { data: string }) => void) | null = null
   sent: string[] = []
   readyState: number
+  url: string
 
-  constructor(public url: string, initialReadyState = FakeWebSocket.OPEN) {
+  constructor(url: string, initialReadyState = FakeWebSocket.OPEN) {
+    this.url = url
     FakeWebSocket.instances.push(this)
     this.readyState = initialReadyState
     if (initialReadyState === FakeWebSocket.OPEN) {
