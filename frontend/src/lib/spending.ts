@@ -18,9 +18,13 @@ const MAX_PIE_SEGMENTS = 6
 // Plaid category this shows up under ("Transfer" in practice, sometimes
 // "Payment") is safe to exclude wholesale — both also hold real spend (a
 // mis-categorized purchase, a recurring bill like rent, Zelle payments to
-// other people).
+// other people). The same transfer posts on BOTH linked accounts — as an
+// outflow on checking ("Mobile Banking payment to CRD ...", "Online Banking
+// payment to CRD ...") and, with a matching confirmation number, as an
+// inflow on the credit card ("PAYMENT FROM CHK ..."). Both sides must be
+// excluded, or one side still double-counts as either spend or income.
 function isCardPaymentTransfer(txn: Transaction): boolean {
-  return /^mobile banking payment\b/i.test(txn.name)
+  return /payment (to crd|from chk)\b/i.test(txn.name)
 }
 
 export function groupSpendingByCategory(transactions: Transaction[]): CategoryTotal[] {

@@ -43,12 +43,17 @@ describe('groupSpendingByCategory', () => {
     expect(result).toEqual([{ category: 'Uncategorized', total: 20 }])
   })
 
-  it('excludes "Mobile Banking payment" transfers by name, regardless of category', () => {
+  it('excludes checking-to-card transfers by name, regardless of category or which bank-app prefix they use', () => {
     const result = groupSpendingByCategory([
       txn({
         category: 'Transfer',
         amount: 166.79,
         name: 'Mobile Banking payment to CRD 1729 Confirmation# zvw4vfdia',
+      }),
+      txn({
+        category: 'Payment',
+        amount: 1050.62,
+        name: 'Online Banking payment to CRD 1729 Confirmation# z71g6b9b2',
       }),
       txn({ category: 'Food and Drink', amount: 12 }),
     ])
@@ -161,15 +166,15 @@ describe('totalIncome', () => {
     expect(result).toBe(2000)
   })
 
-  it('excludes "Mobile Banking payment" transfers by name, regardless of category', () => {
+  it('excludes the credit card\'s own mirror entry for a checking-to-card transfer ("PAYMENT FROM CHK ...")', () => {
     const result = totalIncome(
       [
         txn({
           id: 'card-payment-received',
           date: '2026-08-15',
           amount: -500,
-          category: 'Transfer',
-          name: 'Mobile Banking payment to CRD 1729',
+          category: 'Payment',
+          name: 'PAYMENT FROM CHK 6656 CONF#z71g6b9b2',
         }),
         txn({ id: 'paycheck', date: '2026-08-16', amount: -2000, category: 'Payroll' }),
       ],

@@ -140,7 +140,7 @@ describe('FinanceWidget', () => {
         {
           id: 't2',
           date: '2026-08-27',
-          name: 'Mobile Banking payment to CREDIT CARD',
+          name: 'Mobile Banking payment to CRD 1729 Confirmation# zvw4vfdia',
           amount: -500,
           category: 'Payment',
           pending: false,
