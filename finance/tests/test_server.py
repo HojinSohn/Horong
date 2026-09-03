@@ -1,3 +1,6 @@
+import asyncio
+import time
+
 import pytest
 from aiohttp.test_utils import TestClient, TestServer
 from cryptography.fernet import Fernet
@@ -136,6 +139,33 @@ async def test_link_exchange_missing_public_token_returns_400(storage):
         resp = await client.post("/link/exchange", json={}, headers=ORIGIN)
         assert resp.status == 400
         assert (await resp.json())["error"] == "invalid request body"
+
+
+@pytest.mark.asyncio
+async def test_slow_plaid_call_does_not_block_other_requests(storage):
+    # Regression test for the event-loop-blocking finding: a slow (blocking)
+    # plaid_client call must run off the event loop (via asyncio.to_thread) so
+    # a concurrent request to a different route isn't stalled behind it.
+    class SlowPlaidClient(FakePlaidClient):
+        def create_link_token(self) -> str:
+            time.sleep(0.3)  # simulates a blocking urllib3 call
+            return "link-sandbox-fake"
+
+    app = build_app(SlowPlaidClient(), storage)
+    async with TestClient(TestServer(app)) as client:
+        start = time.monotonic()
+        slow_task = asyncio.create_task(client.post("/link/token", headers=ORIGIN))
+        await asyncio.sleep(0.05)  # let the slow request start first
+        fast_resp = await client.get("/transactions", headers=ORIGIN)
+        fast_elapsed = time.monotonic() - start
+
+        assert fast_resp.status == 200
+        # The fast request should complete well before the slow one finishes,
+        # proving it wasn't serialized behind the blocking Plaid call.
+        assert fast_elapsed < 0.3
+
+        slow_resp = await slow_task
+        assert slow_resp.status == 200
 
 
 @pytest.mark.asyncio

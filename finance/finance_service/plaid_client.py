@@ -16,6 +16,7 @@ from plaid.model.products import Products
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
 CLIENT_USER_ID = "horong-dashboard-user"  # single-user app, fixed id
+REQUEST_TIMEOUT_SECONDS = 10  # bound how long a hung Plaid connection can block a worker thread
 
 
 class ItemLoginRequiredError(Exception):
@@ -51,12 +52,12 @@ class PlaidClient:
             user=LinkTokenCreateRequestUser(client_user_id=CLIENT_USER_ID),
             products=[Products("transactions")],
         )
-        response = self._api.link_token_create(request)
+        response = self._api.link_token_create(request, _request_timeout=REQUEST_TIMEOUT_SECONDS)
         return response.link_token
 
     def exchange_public_token(self, public_token: str) -> tuple[str, str]:
         request = ItemPublicTokenExchangeRequest(public_token=public_token)
-        response = self._api.item_public_token_exchange(request)
+        response = self._api.item_public_token_exchange(request, _request_timeout=REQUEST_TIMEOUT_SECONDS)
         return response.access_token, response.item_id
 
     def sync_transactions(self, access_token: str, cursor: str | None) -> SyncResult:
@@ -68,7 +69,7 @@ class PlaidClient:
                 request_kwargs["cursor"] = result.next_cursor
             request = TransactionsSyncRequest(**request_kwargs)
             try:
-                response = self._api.transactions_sync(request)
+                response = self._api.transactions_sync(request, _request_timeout=REQUEST_TIMEOUT_SECONDS)
             except ApiException as exc:
                 if _plaid_error_code(exc) == "ITEM_LOGIN_REQUIRED":
                     raise ItemLoginRequiredError from exc

@@ -1,6 +1,8 @@
 """aiohttp routes for the Plaid finance service."""
 from __future__ import annotations
 
+import asyncio
+
 from aiohttp import web
 from cryptography.fernet import InvalidToken
 
@@ -38,7 +40,8 @@ def build_app(plaid_client: PlaidClient, storage: FinanceStorage) -> web.Applica
     app = web.Application(middlewares=[origin_guard])
 
     async def link_token(request: web.Request) -> web.Response:
-        return web.json_response({"link_token": plaid_client.create_link_token()})
+        link_token = await asyncio.to_thread(plaid_client.create_link_token)
+        return web.json_response({"link_token": link_token})
 
     async def link_exchange(request: web.Request) -> web.Response:
         try:
@@ -46,7 +49,7 @@ def build_app(plaid_client: PlaidClient, storage: FinanceStorage) -> web.Applica
             public_token = body["public_token"]
         except (ValueError, KeyError, TypeError):
             return web.json_response({"error": "invalid request body"}, status=400)
-        access_token, item_id = plaid_client.exchange_public_token(public_token)
+        access_token, item_id = await asyncio.to_thread(plaid_client.exchange_public_token, public_token)
         storage.save_item(item_id, access_token)
         return web.json_response({"status": "linked"})
 
@@ -61,7 +64,7 @@ def build_app(plaid_client: PlaidClient, storage: FinanceStorage) -> web.Applica
         if item is None:
             return web.json_response({"linked": False, "needs_reauth": False, "transactions": []})
         try:
-            result = plaid_client.sync_transactions(item.access_token, item.cursor)
+            result = await asyncio.to_thread(plaid_client.sync_transactions, item.access_token, item.cursor)
         except ItemLoginRequiredError:
             return web.json_response(
                 {"linked": True, "needs_reauth": True, "transactions": storage.load_transactions()}

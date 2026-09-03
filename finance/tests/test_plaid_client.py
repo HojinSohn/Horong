@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from plaid.exceptions import ApiException
 
-from finance_service.plaid_client import ItemLoginRequiredError, PlaidClient
+from finance_service.plaid_client import REQUEST_TIMEOUT_SECONDS, ItemLoginRequiredError, PlaidClient
 
 
 @pytest.fixture
@@ -24,19 +24,23 @@ def _fake_transaction(transaction_id: str, amount: float = 4.5) -> MagicMock:
 
 def test_create_link_token_returns_the_token(client, monkeypatch):
     response = MagicMock(link_token="link-sandbox-fake")
-    monkeypatch.setattr(client._api, "link_token_create", MagicMock(return_value=response))
+    mock_call = MagicMock(return_value=response)
+    monkeypatch.setattr(client._api, "link_token_create", mock_call)
 
     assert client.create_link_token() == "link-sandbox-fake"
+    assert mock_call.call_args.kwargs["_request_timeout"] == REQUEST_TIMEOUT_SECONDS
 
 
 def test_exchange_public_token_returns_access_token_and_item_id(client, monkeypatch):
     response = MagicMock(access_token="access-sandbox-fake", item_id="item-fake")
-    monkeypatch.setattr(client._api, "item_public_token_exchange", MagicMock(return_value=response))
+    mock_call = MagicMock(return_value=response)
+    monkeypatch.setattr(client._api, "item_public_token_exchange", mock_call)
 
     access_token, item_id = client.exchange_public_token("public-sandbox-fake")
 
     assert access_token == "access-sandbox-fake"
     assert item_id == "item-fake"
+    assert mock_call.call_args.kwargs["_request_timeout"] == REQUEST_TIMEOUT_SECONDS
 
 
 def test_sync_transactions_paginates_until_has_more_is_false(client, monkeypatch):
@@ -46,12 +50,14 @@ def test_sync_transactions_paginates_until_has_more_is_false(client, monkeypatch
     page2 = MagicMock(
         added=[_fake_transaction("t2")], modified=[], removed=[], next_cursor="cursor-2", has_more=False
     )
-    monkeypatch.setattr(client._api, "transactions_sync", MagicMock(side_effect=[page1, page2]))
+    mock_call = MagicMock(side_effect=[page1, page2])
+    monkeypatch.setattr(client._api, "transactions_sync", mock_call)
 
     result = client.sync_transactions("access-sandbox-fake", cursor=None)
 
     assert [t["transaction_id"] for t in result.added] == ["t1", "t2"]
     assert result.next_cursor == "cursor-2"
+    assert all(call.kwargs["_request_timeout"] == REQUEST_TIMEOUT_SECONDS for call in mock_call.call_args_list)
 
 
 def test_sync_transactions_simplifies_transaction_fields(client, monkeypatch):
