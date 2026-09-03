@@ -38,11 +38,12 @@ html, body, #root {
 body {
   background:
     /* faint gold smoke drifting up from the lower left */
-    radial-gradient(55% 40% at 15% 110%, rgba(var(--accent-rgb), 0.06) 0%, transparent 65%),
+    radial-gradient(55% 40% at 15% 110%, rgba(var(--accent-rgb), 0.1) 0%, transparent 65%),
 
-    radial-gradient(100% 100% at 50% 50%, rgba(var(--accent-rgb), 0.5) 0%, transparent 65%),
+    radial-gradient(50% 50% at 50% 100%, rgba(132, 126, 119, 0.3) 0%, transparent 65%),
+
     /* cool smoke from the right */
-    radial-gradient(90% 70% at 105% 30%, rgba(132, 126, 119, 0.05) 0%, transparent 60%),
+    radial-gradient(90% 70% at 105% 30%, rgba(132, 126, 119, 0.3) 0%, transparent 60%),
     /* warm ember at the top, falling off fast into black */
     radial-gradient(circle at 50% -25%, #2e2b27 0%, #100d0a 38%, var(--bg) 62%),
     /* vignette so the edges sink to true black */
@@ -162,6 +163,17 @@ body::before {
   color: var(--text);
 }
 
+.finance-income-stat {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.finance-income-stat strong {
+  color: var(--status-good);
+  font-weight: 600;
+}
+
 .finance-transactions {
   list-style: none;
   margin: 8px 0 0;
@@ -269,6 +281,91 @@ body::before {
 .chat-message--pending {
   font-style: italic;
   opacity: 0.7;
+}
+
+.chat-message--assistant p {
+  margin: 0 0 2px;
+}
+
+.chat-message--assistant h1,
+.chat-message--assistant h2,
+.chat-message--assistant h3,
+.chat-message--assistant h4,
+.chat-message--assistant h5,
+.chat-message--assistant h6 {
+  margin: 0 0 4px;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.chat-message--assistant > :last-child {
+  margin-bottom: 0;
+}
+
+.chat-message--assistant ul,
+.chat-message--assistant ol {
+  margin: 0 0 6px;
+  padding-left: 18px;
+}
+
+.chat-message--assistant li {
+  margin-bottom: 2px;
+}
+
+.chat-message--assistant strong {
+  font-weight: 600;
+}
+
+.chat-message--assistant code {
+  background: rgba(255, 250, 240, 0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.chat-message--assistant pre {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 0 0 6px;
+  overflow-x: auto;
+}
+
+.chat-message--assistant pre code {
+  background: none;
+  padding: 0;
+}
+
+.chat-message--assistant a {
+  color: var(--accent);
+}
+
+.chat-message--assistant blockquote {
+  margin: 0 0 6px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+  color: var(--muted);
+}
+
+.chat-message--assistant table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 6px;
+  font-size: 0.85em;
+}
+
+.chat-message--assistant th,
+.chat-message--assistant td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.chat-message--assistant th {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .chat-message--thought,

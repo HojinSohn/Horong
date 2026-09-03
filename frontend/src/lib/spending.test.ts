@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterToLatestPeriod, groupSpendingByCategory, groupSpendingByPeriod } from './spending'
+import { filterToLatestPeriod, groupSpendingByCategory, groupSpendingByPeriod, totalIncome } from './spending'
 import type { Transaction } from './financeApi'
 
 function txn(overrides: Partial<Transaction>): Transaction {
@@ -41,6 +41,15 @@ describe('groupSpendingByCategory', () => {
     const result = groupSpendingByCategory([txn({ category: null, amount: 20 })])
 
     expect(result).toEqual([{ category: 'Uncategorized', total: 20 }])
+  })
+
+  it('excludes internal credit-card-payment transfers (category "Payment")', () => {
+    const result = groupSpendingByCategory([
+      txn({ category: 'Payment', amount: 500, name: 'Mobile Banking payment to CREDIT CARD' }),
+      txn({ category: 'Food and Drink', amount: 12 }),
+    ])
+
+    expect(result).toEqual([{ category: 'Food and Drink', total: 12 }])
   })
 
   it('folds categories beyond the top 5 into Other', () => {
@@ -106,6 +115,51 @@ describe('groupSpendingByPeriod', () => {
     )
 
     expect(result).toEqual([{ label: 'Aug 2026', total: 100 }])
+  })
+
+  it('excludes internal credit-card-payment transfers (category "Payment")', () => {
+    const result = groupSpendingByPeriod(
+      [
+        txn({ date: '2026-08-10', amount: 500, category: 'Payment' }),
+        txn({ date: '2026-08-10', amount: 12, category: 'Food and Drink' }),
+      ],
+      'month',
+    )
+
+    expect(result).toEqual([{ label: 'Aug 2026', total: 12 }])
+  })
+})
+
+describe('totalIncome', () => {
+  it('sums credits in the latest period only', () => {
+    const result = totalIncome(
+      [
+        txn({ id: 'aug-paycheck', date: '2026-08-15', amount: -2000, category: 'Payroll' }),
+        txn({ id: 'aug-spend', date: '2026-08-16', amount: 50, category: 'Food and Drink' }),
+        txn({ id: 'jul-paycheck', date: '2026-07-15', amount: -2000, category: 'Payroll' }),
+      ],
+      'month',
+    )
+
+    expect(result).toBe(2000)
+  })
+
+  it('excludes internal credit-card-payment transfers (category "Payment")', () => {
+    const result = totalIncome(
+      [
+        txn({ id: 'card-payment-received', date: '2026-08-15', amount: -500, category: 'Payment' }),
+        txn({ id: 'paycheck', date: '2026-08-16', amount: -2000, category: 'Payroll' }),
+      ],
+      'month',
+    )
+
+    expect(result).toBe(2000)
+  })
+
+  it('returns 0 when there are no credits in the latest period', () => {
+    const result = totalIncome([txn({ date: '2026-08-15', amount: 50, category: 'Food and Drink' })], 'month')
+
+    expect(result).toBe(0)
   })
 })
 

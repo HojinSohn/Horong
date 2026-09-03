@@ -131,6 +131,29 @@ describe('FinanceWidget', () => {
     expect(screen.queryByText('Pending')).not.toBeInTheDocument()
   })
 
+  it('shows income for the selected period, excluding credit-card-payment transfers', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({
+      linked: true,
+      needsReauth: false,
+      transactions: [
+        { id: 't1', date: '2026-08-27', name: 'Paycheck', amount: -2000, category: 'Payroll', pending: false },
+        {
+          id: 't2',
+          date: '2026-08-27',
+          name: 'Mobile Banking payment to CREDIT CARD',
+          amount: -500,
+          category: 'Payment',
+          pending: false,
+        },
+      ],
+    })
+
+    render(<FinanceWidget />)
+
+    expect(await screen.findByText(/Income \(this week\)/)).toBeInTheDocument()
+    expect(screen.getByText('$2,000.00')).toBeInTheDocument()
+  })
+
   it('shares one Weekly/Monthly toggle across both charts, defaulting to Weekly', async () => {
     vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({
       linked: true,
