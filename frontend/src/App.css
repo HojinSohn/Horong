@@ -48,7 +48,7 @@ body {
     var(--bg);
   background-attachment: fixed;
   color: var(--text);
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-family: 'Geist Sans', system-ui, sans-serif;
 }
 
 /* Film grain / smoke haze sitting over the gradient */
