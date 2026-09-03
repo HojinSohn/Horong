@@ -2,6 +2,7 @@
 from Plaid's generated SDK shapes."""
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 
 import plaid
@@ -69,7 +70,7 @@ class PlaidClient:
             try:
                 response = self._api.transactions_sync(request)
             except ApiException as exc:
-                if "ITEM_LOGIN_REQUIRED" in exc.body:
+                if _plaid_error_code(exc) == "ITEM_LOGIN_REQUIRED":
                     raise ItemLoginRequiredError from exc
                 raise
             result.added.extend(_simplify(t) for t in response.added)
@@ -78,6 +79,18 @@ class PlaidClient:
             result.next_cursor = response.next_cursor
             has_more = response.has_more
         return result
+
+
+def _plaid_error_code(exc: ApiException) -> str | None:
+    body = exc.body
+    if body is None:
+        return None
+    if isinstance(body, bytes):
+        body = body.decode()
+    try:
+        return json.loads(body).get("error_code")
+    except (ValueError, AttributeError):
+        return None
 
 
 def _simplify(transaction) -> dict:

@@ -74,8 +74,26 @@ def test_sync_transactions_simplifies_transaction_fields(client, monkeypatch):
 
 def test_sync_transactions_raises_item_login_required_on_that_plaid_error(client, monkeypatch):
     error = ApiException(status=400)
-    error.body = '{"error_code": "ITEM_LOGIN_REQUIRED"}'
+    error.body = b'{"error_code": "ITEM_LOGIN_REQUIRED"}'
     monkeypatch.setattr(client._api, "transactions_sync", MagicMock(side_effect=error))
 
     with pytest.raises(ItemLoginRequiredError):
+        client.sync_transactions("access-sandbox-fake", cursor=None)
+
+
+def test_sync_transactions_reraises_other_plaid_errors_unchanged(client, monkeypatch):
+    error = ApiException(status=500)
+    error.body = b'{"error_code": "INTERNAL_SERVER_ERROR"}'
+    monkeypatch.setattr(client._api, "transactions_sync", MagicMock(side_effect=error))
+
+    with pytest.raises(ApiException):
+        client.sync_transactions("access-sandbox-fake", cursor=None)
+
+
+def test_sync_transactions_handles_none_body_without_crashing(client, monkeypatch):
+    error = ApiException(status=500)
+    error.body = None
+    monkeypatch.setattr(client._api, "transactions_sync", MagicMock(side_effect=error))
+
+    with pytest.raises(ApiException):
         client.sync_transactions("access-sandbox-fake", cursor=None)
