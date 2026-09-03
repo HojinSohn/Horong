@@ -18,8 +18,15 @@ async def test_prompt_round_trip_over_websocket(tmp_path):
         port = server.sockets[0].getsockname()[1]
         async with websockets.connect(f"ws://localhost:{port}") as client:
             await client.send(json.dumps({"type": "prompt", "text": "hi"}))
-            chunk = json.loads(await client.recv())
-            done = json.loads(await client.recv())
+            frames = [json.loads(await client.recv()) for _ in range(5)]
 
-    assert chunk == {"type": "chunk", "text": "echo: hi"}
-    assert done == {"type": "done"}
+    # The fixture's canned response includes a thought and a tool-call
+    # lifecycle alongside the chunk/done — this confirms the server relays
+    # every frame type generically, not just chunk/done.
+    assert frames == [
+        {"type": "thought", "text": "thinking about echo"},
+        {"type": "tool_call", "id": "tool-1", "title": "echo_lookup", "kind": "fetch", "status": "in_progress"},
+        {"type": "tool_call", "id": "tool-1", "title": None, "kind": None, "status": "completed"},
+        {"type": "chunk", "text": "echo: hi"},
+        {"type": "done"},
+    ]

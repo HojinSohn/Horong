@@ -36,10 +36,22 @@ class HorongClient:
         self._updates = updates
 
     async def session_update(self, session_id: str, update, **kwargs) -> None:
-        if getattr(update, "session_update", None) == "agent_message_chunk":
+        kind = getattr(update, "session_update", None)
+        if kind in ("agent_message_chunk", "agent_thought_chunk"):
             text = getattr(update.content, "text", "")
             if text:
-                await self._updates.put({"type": "chunk", "text": text})
+                frame_type = "chunk" if kind == "agent_message_chunk" else "thought"
+                await self._updates.put({"type": frame_type, "text": text})
+        elif kind in ("tool_call", "tool_call_update"):
+            await self._updates.put(
+                {
+                    "type": "tool_call",
+                    "id": update.tool_call_id,
+                    "title": update.title,
+                    "kind": update.kind,
+                    "status": update.status,
+                }
+            )
 
     async def request_permission(
         self, options: Sequence[PermissionOption], session_id: str, tool_call: ToolCallUpdate, **kwargs
@@ -83,32 +95,41 @@ class HorongSession:
         self.session_id = session_id
         self.updates = updates
 
-    # ponytail: known race — `done` can be enqueued before the final `chunk`.
-    # `acp`'s notification dispatcher runs each incoming `session/update` as a
-    # fire-and-forget `asyncio.create_task(...)`, not awaited inline. So
-    # `connection.prompt()` below can return (its response arrives on the same
-    # transport, but isn't gated on those tasks finishing) before the task
-    # handling the *last* chunk's `session_update` callback has actually run
-    # and put its chunk on `self.updates`. If `done` is enqueued first, a
-    # client reading the queue in order sees `done` before that final chunk.
-    # Reproduced against a 5-chunk fixture: 4/15 runs. Against the existing
-    # 1-chunk fixture: 0/30 runs — with only one chunk there's nothing for
-    # `done` to race ahead of, which is why the current test never catches
-    # this. Not observed against live `hermes acp` (real chunk timing leaves
-    # enough of a gap for the dispatched task to run first), so this is
-    # latent, not active, today.
-    # Upgrade path if it ever bites: either (a) track expected vs. received
-    # chunk count from `session_update`'s payload (e.g. `stop_reason`) and
-    # hold `done` until they match, or (b) have `session_update` hand back an
-    # awaitable per dispatched task and await all pending ones here before
-    # enqueueing `done`. Both require change on top of `acp`'s dispatch, which
-    # is more surgery than this fix wave covers.
+    # `done`-before-final-notification race, and the mitigation below:
+    # `acp`'s notification dispatcher runs each incoming `session/update`
+    # through two hops of fire-and-forget `asyncio.create_task(...)` (queue
+    # dispatcher -> per-notification runner), not awaited inline. So
+    # `connection.prompt()` below can return — its response arrives on the
+    # same transport but isn't gated on those tasks finishing — before the
+    # task handling the *last* notification's `session_update` callback has
+    # actually run and put its item on `self.updates`. Confirmed with a
+    # richer fixture emitting a thought + 2 tool-call updates + a chunk
+    # before the response: 6/15 runs put `done` ahead of a still-pending
+    # notification without a fix.
+    #
+    # `acp` gives no public synchronization point for "wait until all
+    # dispatched notification handlers have run" (its internal message
+    # queue's `join()` marks tasks done at *dispatch*, not completion, and
+    # its `TaskSupervisor` tracks tasks only for cancellation on shutdown).
+    # So the fix is a bounded number of `asyncio.sleep(0)` event-loop ticks
+    # — not a time-based guess, each tick fully drains whatever's already
+    # ready to run — comfortably more than the two hops observed above.
+    # Ceiling: this is empirical, not a guarantee, against a fixed dispatch
+    # depth; if `acp` ever adds a third hop (or under extreme scheduler
+    # contention) this could still race. Upgrade path if it ever bites live:
+    # track expected vs. received notification count and hold `done` until
+    # they match, which needs a real signal for "this is the last one" that
+    # the protocol doesn't currently expose.
+    _NOTIFICATION_DRAIN_TICKS = 6
+
     async def send_prompt(self, text: str) -> None:
         try:
             await self._connection.prompt(prompt=[text_block(text)], session_id=self.session_id)
         except Exception as exc:  # subprocess/protocol boundary: surface, don't crash the caller
             await self.updates.put({"type": "error", "message": str(exc)})
             return
+        for _ in range(self._NOTIFICATION_DRAIN_TICKS):
+            await asyncio.sleep(0)
         await self.updates.put({"type": "done"})
 
 

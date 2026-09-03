@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 
 from acp.agent import AgentSideConnection
-from acp.helpers import update_agent_message_text
+from acp.helpers import start_tool_call, update_agent_message_text, update_agent_thought_text, update_tool_call
 from acp.schema import InitializeResponse, NewSessionResponse, PromptResponse
 from acp.stdio import stdio_streams
 
@@ -23,6 +23,18 @@ class FakeAgent:
     async def prompt(self, prompt, session_id: str, message_id=None, **kwargs) -> PromptResponse:
         text = prompt[0].text if prompt else ""
         connection = self._holder["connection"]
+        await connection.session_update(
+            session_id=session_id,
+            update=update_agent_thought_text("thinking about echo"),
+        )
+        await connection.session_update(
+            session_id=session_id,
+            update=start_tool_call("tool-1", "echo_lookup", kind="fetch", status="in_progress"),
+        )
+        await connection.session_update(
+            session_id=session_id,
+            update=update_tool_call("tool-1", status="completed"),
+        )
         await connection.session_update(
             session_id=session_id,
             update=update_agent_message_text(f"echo: {text}"),
