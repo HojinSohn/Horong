@@ -12,6 +12,7 @@ afterEach(() => {
 describe('financeApi', () => {
   it('fetchLinkToken posts to /link/token and returns the token', async () => {
     ;(fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
       json: async () => ({ link_token: 'link-sandbox-fake' }),
     })
 
@@ -25,7 +26,7 @@ describe('financeApi', () => {
   })
 
   it('exchangePublicToken posts the public token as JSON', async () => {
-    ;(fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ json: async () => ({ status: 'linked' }) })
+    ;(fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, json: async () => ({ status: 'linked' }) })
 
     await exchangePublicToken('public-sandbox-fake')
 
@@ -40,6 +41,7 @@ describe('financeApi', () => {
 
   it('fetchTransactions maps the response to camelCase', async () => {
     ;(fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
       json: async () => ({
         linked: true,
         needs_reauth: false,
@@ -58,5 +60,15 @@ describe('financeApi', () => {
         { id: 't1', date: '2026-09-01', name: 'Coffee Shop', amount: 4.5, category: 'Food and Drink', pending: false },
       ],
     })
+  })
+
+  it('fetchTransactions rejects when the server responds with a non-2xx status', async () => {
+    ;(fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'boom' }),
+    })
+
+    await expect(fetchTransactions()).rejects.toThrow('finance API request failed: 500')
   })
 })
