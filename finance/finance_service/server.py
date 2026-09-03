@@ -2,18 +2,36 @@
 from __future__ import annotations
 
 from aiohttp import web
+from cryptography.fernet import InvalidToken
 
 from finance_service.plaid_client import ItemLoginRequiredError, PlaidClient
 from finance_service.storage import FinanceStorage
 
 ALLOWED_ORIGIN = "http://localhost:3000"
+CORS_METHODS = "POST, GET, OPTIONS"
+CORS_HEADERS = "Content-Type"
 
 
 @web.middleware
 async def origin_guard(request: web.Request, handler):
     if request.headers.get("Origin") != ALLOWED_ORIGIN:
         return web.json_response({"error": "forbidden origin"}, status=403)
-    return await handler(request)
+    response = await handler(request)
+    # Server-side origin check above is the real security boundary; this header
+    # is what lets a browser (which enforces CORS itself) actually read the response.
+    response.headers["Access-Control-Allow-Origin"] = ALLOWED_ORIGIN
+    return response
+
+
+async def _cors_preflight(request: web.Request) -> web.Response:
+    return web.Response(
+        status=204,
+        headers={
+            "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+            "Access-Control-Allow-Methods": CORS_METHODS,
+            "Access-Control-Allow-Headers": CORS_HEADERS,
+        },
+    )
 
 
 def build_app(plaid_client: PlaidClient, storage: FinanceStorage) -> web.Application:
@@ -23,13 +41,23 @@ def build_app(plaid_client: PlaidClient, storage: FinanceStorage) -> web.Applica
         return web.json_response({"link_token": plaid_client.create_link_token()})
 
     async def link_exchange(request: web.Request) -> web.Response:
-        body = await request.json()
-        access_token, item_id = plaid_client.exchange_public_token(body["public_token"])
+        try:
+            body = await request.json()
+            public_token = body["public_token"]
+        except (ValueError, KeyError, TypeError):
+            return web.json_response({"error": "invalid request body"}, status=400)
+        access_token, item_id = plaid_client.exchange_public_token(public_token)
         storage.save_item(item_id, access_token)
         return web.json_response({"status": "linked"})
 
     async def transactions(request: web.Request) -> web.Response:
-        item = storage.load_item()
+        try:
+            item = storage.load_item()
+        except InvalidToken:
+            return web.json_response(
+                {"error": "stored credentials could not be decrypted — check FINANCE_FERNET_KEY"},
+                status=500,
+            )
         if item is None:
             return web.json_response({"linked": False, "needs_reauth": False, "transactions": []})
         try:
@@ -47,4 +75,6 @@ def build_app(plaid_client: PlaidClient, storage: FinanceStorage) -> web.Applica
     app.router.add_post("/link/token", link_token)
     app.router.add_post("/link/exchange", link_exchange)
     app.router.add_get("/transactions", transactions)
+    for path in ("/link/token", "/link/exchange", "/transactions"):
+        app.router.add_options(path, _cors_preflight)
     return app

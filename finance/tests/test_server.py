@@ -97,3 +97,57 @@ async def test_disallowed_origin_is_rejected(storage):
     async with TestClient(TestServer(app)) as client:
         resp = await client.post("/link/token", headers={"Origin": "http://evil.example.com"})
         assert resp.status == 403
+
+
+@pytest.mark.asyncio
+async def test_allowed_origin_response_includes_cors_header(storage):
+    app = build_app(FakePlaidClient(), storage)
+    async with TestClient(TestServer(app)) as client:
+        resp = await client.get("/transactions", headers=ORIGIN)
+        assert resp.headers["Access-Control-Allow-Origin"] == "http://localhost:3000"
+
+
+@pytest.mark.asyncio
+async def test_options_preflight_returns_cors_headers(storage):
+    app = build_app(FakePlaidClient(), storage)
+    async with TestClient(TestServer(app)) as client:
+        resp = await client.options("/link/exchange", headers=ORIGIN)
+        assert resp.status in (200, 204)
+        assert resp.headers["Access-Control-Allow-Origin"] == "http://localhost:3000"
+        assert "POST" in resp.headers["Access-Control-Allow-Methods"]
+        assert resp.headers["Access-Control-Allow-Headers"] == "Content-Type"
+
+
+@pytest.mark.asyncio
+async def test_link_exchange_malformed_json_returns_400(storage):
+    app = build_app(FakePlaidClient(), storage)
+    async with TestClient(TestServer(app)) as client:
+        resp = await client.post(
+            "/link/exchange", data="not json", headers={**ORIGIN, "Content-Type": "application/json"}
+        )
+        assert resp.status == 400
+        assert (await resp.json())["error"] == "invalid request body"
+
+
+@pytest.mark.asyncio
+async def test_link_exchange_missing_public_token_returns_400(storage):
+    app = build_app(FakePlaidClient(), storage)
+    async with TestClient(TestServer(app)) as client:
+        resp = await client.post("/link/exchange", json={}, headers=ORIGIN)
+        assert resp.status == 400
+        assert (await resp.json())["error"] == "invalid request body"
+
+
+@pytest.mark.asyncio
+async def test_transactions_route_reports_diagnostic_on_bad_fernet_key(tmp_path):
+    db_path = str(tmp_path / "finance.db")
+    linking_storage = connect(db_path, Fernet.generate_key().decode())
+    linking_storage.save_item("item-fake", "access-sandbox-fake")
+    # Simulate a rotated/corrupted encryption key: same DB, different Fernet key.
+    mismatched_storage = connect(db_path, Fernet.generate_key().decode())
+    app = build_app(FakePlaidClient(), mismatched_storage)
+    async with TestClient(TestServer(app)) as client:
+        resp = await client.get("/transactions", headers=ORIGIN)
+        assert resp.status == 500
+        body = await resp.json()
+        assert "FINANCE_FERNET_KEY" in body["error"]
