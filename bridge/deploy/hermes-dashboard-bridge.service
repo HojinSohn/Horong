@@ -1,0 +1,16 @@
+[Unit]
+Description=Horong custom-dashboard ACP bridge
+After=network-online.target
+
+[Service]
+WorkingDirectory=/root/hermes-dashboard-bridge
+ExecStart=/root/hermes-dashboard-bridge/venv/bin/python -m acp_bridge.main
+Restart=on-failure
+RestartSec=2
+Environment=BRIDGE_HOST=100.109.58.59
+Environment=BRIDGE_PORT=8765
+Environment=HERMES_BIN=/usr/local/bin/hermes
+Environment=BRIDGE_WORKSPACE_DIR=/root/hermes-workspace
+
+[Install]
+WantedBy=default.target
