@@ -1,15 +1,29 @@
 :root {
   color-scheme: dark;
-  --bg: #08090c;
-  --panel: #101218;
-  --surface-2: #181b22; /* one step up from --panel: assistant chat bubble, etc. */
-  --text: #f4f4f5;
-  --muted: #71717a;
-  --accent: #8b7cff;
-  --accent-secondary: #5eead4; /* used sparingly — one distinct spot, not the default accent */
-  --border: rgba(255, 255, 255, 0.1);
-  --status-good: #4ade80;
-  --status-bad: #f87171;
+
+  /* Near-black espresso base, much darker than before */
+  --bg: #080706;
+  --bg-deep: #000000;
+  --bg-lift: #1c1811;
+
+  /* Smoked glass layers */
+  --panel: rgba(20, 18, 16, 0.42);
+  --panel-edge: rgba(255, 252, 245, 0.06);
+  --panel-sheen: rgba(255, 250, 240, 0.09);
+  --surface-2: rgba(46, 42, 36, 0.45);
+
+  --text: #f9f6f0;
+  --muted: #98907f;
+
+  --accent: #d4b881;
+  --accent-rgb: 212, 184, 129;
+  --accent-secondary: #f0e4d3;
+
+  --border: rgba(212, 184, 129, 0.12);
+  --status-good: #63b37b;
+  --status-bad: #e27d72;
+
+  --blur: 28px;
 }
 
 * {
@@ -22,12 +36,36 @@ html, body, #root {
 }
 
 body {
-  background: var(--bg);
+  background:
+    /* faint gold smoke drifting up from the lower left */
+    radial-gradient(55% 40% at 15% 110%, rgba(var(--accent-rgb), 0.06) 0%, transparent 65%),
+    /* cool smoke from the right */
+    radial-gradient(90% 70% at 105% 30%, rgba(132, 126, 119, 0.05) 0%, transparent 60%),
+    /* warm ember at the top, falling off fast into black */
+    radial-gradient(circle at 50% -25%, #2e2b27 0%, #100d0a 38%, var(--bg) 62%),
+    /* vignette so the edges sink to true black */
+    linear-gradient(180deg, transparent 40%, var(--bg-deep) 100%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
-  font-family: system-ui, sans-serif;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+/* Film grain / smoke haze sitting over the gradient */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
 .dashboard {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 350px 1fr 350px;
   gap: 12px;
@@ -37,19 +75,39 @@ body {
 
 .dashboard > aside,
 .dashboard > main {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
+  position: relative;
+  background:
+    linear-gradient(160deg, rgba(255, 250, 240, 0.045) 0%, rgba(255, 250, 240, 0) 42%),
+    var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 14px;
+  padding: 14px;
   overflow-y: auto;
+  box-shadow:
+    inset 0 1px 0 var(--panel-sheen),
+    inset 0 -40px 60px -40px rgba(0, 0, 0, 0.8),
+    0 24px 60px rgba(0, 0, 0, 0.65);
+}
+
+/* Light catching the top edge of each pane */
+.dashboard > aside::after,
+.dashboard > main::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  pointer-events: none;
 }
 
 .widget-card {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .widget-card h2 {
   font-size: 0.85rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--accent);
@@ -68,6 +126,7 @@ body {
 
 .finance-chart h3 {
   font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--accent);
@@ -76,22 +135,28 @@ body {
 
 .finance-period-toggle {
   display: flex;
-  gap: 2px;
+  gap: 4px;
   margin-top: 12px;
 }
 
 .finance-period-toggle button {
-  background: transparent;
+  background: rgba(255, 250, 240, 0.03);
   border: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
   cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.finance-period-toggle button:hover {
+  color: var(--text);
 }
 
 .finance-period-toggle button.active {
-  border-color: var(--accent-secondary);
+  background: rgba(var(--accent-rgb), 0.12);
+  border-color: rgba(var(--accent-rgb), 0.4);
   color: var(--text);
 }
 
@@ -105,7 +170,7 @@ body {
 
 .finance-txn {
   padding: 8px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255, 250, 240, 0.05);
 }
 
 .finance-txn:last-child {
@@ -128,8 +193,9 @@ body {
 
 .finance-txn__amount {
   flex-shrink: 0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .finance-txn__amount--credit {
@@ -179,20 +245,24 @@ body {
 }
 
 .chat-message {
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 9px 13px;
+  border-radius: 12px;
   margin-bottom: 8px;
   max-width: 80%;
   white-space: pre-wrap;
 }
 
 .chat-message--user {
-  background: var(--accent);
+  background: linear-gradient(155deg, var(--accent-secondary), #d9c9b2);
+  color: #0d0b09;
   margin-left: auto;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
 
 .chat-message--assistant {
   background: var(--surface-2);
+  border: 1px solid rgba(255, 250, 240, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 240, 0.05);
 }
 
 .chat-message--pending {
@@ -204,6 +274,8 @@ body {
 .chat-message--tool_call {
   max-width: 100%;
   background: transparent;
+  border: none;
+  box-shadow: none;
   padding: 2px 0;
   margin-bottom: 4px;
   font-size: 0.8rem;
@@ -222,25 +294,92 @@ body {
   white-space: pre-wrap;
 }
 
+.chat-messages::-webkit-scrollbar,
+.finance-transactions::-webkit-scrollbar,
+.dashboard > aside::-webkit-scrollbar,
+.dashboard > main::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track,
+.finance-transactions::-webkit-scrollbar-track,
+.dashboard > aside::-webkit-scrollbar-track,
+.dashboard > main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb,
+.finance-transactions::-webkit-scrollbar-thumb,
+.dashboard > aside::-webkit-scrollbar-thumb,
+.dashboard > main::-webkit-scrollbar-thumb {
+  background: rgba(255, 250, 240, 0.08);
+  border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover,
+.finance-transactions::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--accent-rgb), 0.35);
+}
+
 .chat-panel form {
   display: flex;
   gap: 8px;
+  margin-top: 12px;
+  position: relative;
 }
 
 .chat-panel input {
   flex: 1;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  background: rgba(8, 7, 6, 0.55);
+  border: 1px solid rgba(255, 250, 240, 0.07);
+  border-radius: 10px;
   color: var(--text);
-  padding: 8px;
+  padding: 12px 16px;
+  font-family: inherit;
+  /* backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px); */
+  box-shadow: inset 0 1px 0 rgba(255, 250, 240, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.chat-panel input::placeholder {
+  color: var(--muted);
+}
+
+.chat-panel input:focus {
+  outline: none;
+  border-color: rgba(var(--accent-rgb), 0.55);
+  background: rgba(14, 12, 10, 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 240, 0.05),
+    0 0 18px rgba(var(--accent-rgb), 0.14);
 }
 
 .chat-panel button {
-  background: var(--accent);
-  border: none;
-  border-radius: 6px;
-  color: var(--bg);
-  padding: 8px 14px;
+  background: rgba(var(--accent-rgb), 0.9);
+  border: 1px solid rgba(var(--accent-rgb), 0.9);
+  border-radius: 10px;
+  color: #0d0b09;
+  font-weight: 600;
+  padding: 0 20px;
   cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-panel button:hover {
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.2);
+}
+
+.chat-panel button:focus-visible,
+.finance-period-toggle button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }
