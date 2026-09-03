@@ -2,9 +2,10 @@ import { Cell, Legend, Pie, PieChart, Tooltip } from 'recharts'
 import type { Transaction } from '../lib/financeApi'
 import { currencyFormatter, filterToLatestPeriod, groupSpendingByCategory, type Period } from '../lib/spending'
 
-// dataviz categorical palette, dark-mode steps, slots 1-6 — validated
-// (CVD + contrast) against this app's --panel surface (#1c1f26).
-const SERIES_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300']
+// User-requested hue family (red/teal/yellow/green/purple/pink), lightness
+// and chroma snapped into the dark-mode OKLCH band and re-stepped for CVD
+// separation — validated against this app's --panel surface (~#17140f).
+const SERIES_COLORS = ['#c94b38', '#0088ae', '#b98a00', '#457300', '#8268be', '#d5518a']
 
 interface SpendingPieChartProps {
   transactions: Transaction[]

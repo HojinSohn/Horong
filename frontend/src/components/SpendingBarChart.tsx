@@ -21,7 +21,7 @@ export function SpendingBarChart({ transactions, period }: SpendingBarChartProps
         <XAxis dataKey="label" tick={AXIS_TICK_STYLE} />
         <YAxis tick={AXIS_TICK_STYLE} width={40} />
         <Tooltip formatter={(value) => currencyFormatter.format(Number(value))} />
-        <Bar dataKey="total" fill="#3987e5" radius={[4, 4, 0, 0]} maxBarSize={24} isAnimationActive={false} />
+        <Bar dataKey="total" fill="#c94b38" radius={[4, 4, 0, 0]} maxBarSize={24} isAnimationActive={false} />
       </BarChart>
     </div>
   )
