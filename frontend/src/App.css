@@ -39,6 +39,8 @@ body {
   background:
     /* faint gold smoke drifting up from the lower left */
     radial-gradient(55% 40% at 15% 110%, rgba(var(--accent-rgb), 0.06) 0%, transparent 65%),
+
+    radial-gradient(100% 100% at 50% 50%, rgba(var(--accent-rgb), 0.5) 0%, transparent 65%),
     /* cool smoke from the right */
     radial-gradient(90% 70% at 105% 30%, rgba(132, 126, 119, 0.05) 0%, transparent 60%),
     /* warm ember at the top, falling off fast into black */
@@ -48,7 +50,7 @@ body {
     var(--bg);
   background-attachment: fixed;
   color: var(--text);
-  font-family: 'Geist Sans', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
 /* Film grain / smoke haze sitting over the gradient */
@@ -67,7 +69,7 @@ body::before {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 350px 1fr 350px;
+  grid-template-columns: 400px 1fr 400px;
   gap: 12px;
   height: 100vh;
   padding: 12px;
@@ -193,7 +195,6 @@ body::before {
 
 .finance-txn__amount {
   flex-shrink: 0;
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
 }
