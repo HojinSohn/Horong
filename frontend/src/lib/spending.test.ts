@@ -52,6 +52,28 @@ describe('groupSpendingByCategory', () => {
     expect(result).toEqual([{ category: 'Food and Drink', total: 12 }])
   })
 
+  it('excludes "Mobile Banking payment" transfers even when Plaid categorizes them as "Transfer"', () => {
+    const result = groupSpendingByCategory([
+      txn({
+        category: 'Transfer',
+        amount: 166.79,
+        name: 'Mobile Banking payment to CRD 1729 Confirmation# zvw4vfdia',
+      }),
+      txn({ category: 'Food and Drink', amount: 12 }),
+    ])
+
+    expect(result).toEqual([{ category: 'Food and Drink', total: 12 }])
+  })
+
+  it('keeps other "Transfer"-categorized spend that is not a card payment (e.g. a mis-categorized purchase or a Zelle payment)', () => {
+    const result = groupSpendingByCategory([
+      txn({ category: 'Transfer', amount: 8.5, name: 'ARA PURDUE BOILERMAKER MK' }),
+      txn({ category: 'Transfer', amount: 40, name: 'Zelle payment to SUKMIN for "Pott"; Conf# xy880uh0i' }),
+    ])
+
+    expect(result).toEqual([{ category: 'Transfer', total: 48.5 }])
+  })
+
   it('folds categories beyond the top 5 into Other', () => {
     const result = groupSpendingByCategory([
       txn({ category: 'A', amount: 60 }),

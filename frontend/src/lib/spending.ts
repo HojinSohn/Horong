@@ -11,17 +11,23 @@ export interface CategoryTotal {
 // the tail into "Other" rather than seat a 6th+ named category.
 const MAX_PIE_SEGMENTS = 6
 
-// Plaid's "Payment" category is a transfer between your own accounts (e.g.
-// paying off a credit card from checking) — the underlying purchases are
-// already counted individually on the card side, so this isn't real spend
-// or income and would double-count if included.
-const TRANSFER_CATEGORY = 'Payment'
+// A transfer between your own accounts (e.g. paying off a credit card from
+// checking) — the underlying purchases are already counted individually on
+// the card side, so this isn't real spend or income and would double-count
+// if included. Plaid's legacy "Payment" category flags this cleanly, but in
+// practice bank-generated names like "Mobile Banking payment to CRD ..."
+// often land in the much broader "Transfer" category instead — a category
+// that also holds real spend (e.g. a mis-categorized purchase) and Zelle
+// payments to/from other people, so that whole category can't be excluded.
+function isCardPaymentTransfer(txn: Transaction): boolean {
+  return txn.category === 'Payment' || /^mobile banking payment\b/i.test(txn.name)
+}
 
 export function groupSpendingByCategory(transactions: Transaction[]): CategoryTotal[] {
   const totals = new Map<string, number>()
   for (const txn of transactions) {
     if (txn.amount <= 0) continue // Plaid convention: positive = spend, negative = credit/refund
-    if (txn.category === TRANSFER_CATEGORY) continue
+    if (isCardPaymentTransfer(txn)) continue
     const category = txn.category ?? 'Uncategorized'
     totals.set(category, (totals.get(category) ?? 0) + txn.amount)
   }
@@ -70,7 +76,7 @@ export function groupSpendingByPeriod(transactions: Transaction[], period: Perio
   const totals = new Map<string, number>()
   for (const txn of transactions) {
     if (txn.amount <= 0) continue
-    if (txn.category === TRANSFER_CATEGORY) continue
+    if (isCardPaymentTransfer(txn)) continue
     const key = periodKey(txn.date, period)
     totals.set(key, (totals.get(key) ?? 0) + txn.amount)
   }
@@ -93,6 +99,6 @@ export function filterToLatestPeriod(transactions: Transaction[], period: Period
 
 export function totalIncome(transactions: Transaction[], period: Period): number {
   return filterToLatestPeriod(transactions, period)
-    .filter((txn) => txn.amount < 0 && txn.category !== TRANSFER_CATEGORY)
+    .filter((txn) => txn.amount < 0 && !isCardPaymentTransfer(txn))
     .reduce((sum, txn) => sum + Math.abs(txn.amount), 0)
 }
