@@ -69,6 +69,68 @@ describe('FinanceWidget', () => {
     expect(await screen.findByText(/Couldn't load transactions/)).toBeInTheDocument()
   })
 
+  it('formats a debit as plain currency and a credit as a signed, distinctly-styled amount', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({
+      linked: true,
+      needsReauth: false,
+      transactions: [
+        { id: 't1', date: '2026-08-27', name: 'United Airlines', amount: 500, category: 'Travel', pending: false },
+        { id: 't2', date: '2026-08-10', name: 'United Airlines Refund', amount: -500, category: 'Travel', pending: false },
+      ],
+    })
+
+    render(<FinanceWidget />)
+
+    expect(await screen.findByText('$500.00')).toBeInTheDocument()
+    const credit = await screen.findByText('+$500.00')
+    expect(credit).toHaveClass('finance-txn__amount--credit')
+  })
+
+  it('formats the transaction date as a short month/day label, not the raw ISO string', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({
+      linked: true,
+      needsReauth: false,
+      transactions: [
+        { id: 't1', date: '2026-08-27', name: 'United Airlines', amount: 500, category: 'Travel', pending: false },
+      ],
+    })
+
+    render(<FinanceWidget />)
+
+    expect(await screen.findByText('Aug 27')).toBeInTheDocument()
+    expect(screen.queryByText('2026-08-27')).not.toBeInTheDocument()
+  })
+
+  it('shows the category and a pending badge when present', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({
+      linked: true,
+      needsReauth: false,
+      transactions: [
+        { id: 't1', date: '2026-08-27', name: 'Coffee Shop', amount: 4.5, category: 'Food and Drink', pending: true },
+      ],
+    })
+
+    render(<FinanceWidget />)
+
+    expect(await screen.findByText('Food and Drink')).toBeInTheDocument()
+    expect(await screen.findByText('Pending')).toBeInTheDocument()
+  })
+
+  it('omits the pending badge when the transaction has settled', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({
+      linked: true,
+      needsReauth: false,
+      transactions: [
+        { id: 't1', date: '2026-08-27', name: 'Coffee Shop', amount: 4.5, category: 'Food and Drink', pending: false },
+      ],
+    })
+
+    render(<FinanceWidget />)
+
+    await screen.findByText('Coffee Shop')
+    expect(screen.queryByText('Pending')).not.toBeInTheDocument()
+  })
+
   it('exchanges the public token and reloads transactions on Link success', async () => {
     vi.spyOn(financeApi, 'fetchTransactions')
       .mockResolvedValueOnce({ linked: false, needsReauth: false, transactions: [] })

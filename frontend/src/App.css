@@ -57,6 +57,69 @@ body {
   font-size: 0.9rem;
 }
 
+.finance-transactions {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.finance-txn {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.finance-txn:last-child {
+  border-bottom: none;
+}
+
+.finance-txn__main {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.finance-txn__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.finance-txn__amount {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+
+.finance-txn__amount--credit {
+  color: #4ade80;
+}
+
+.finance-txn__meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: #8a8f98;
+}
+
+.finance-txn__pending {
+  font-style: italic;
+}
+
+.finance-reauth,
+.finance-error {
+  font-size: 0.85rem;
+  margin: 8px 0 0;
+}
+
+.finance-error {
+  color: #f87171;
+}
+
 .chat-panel {
   display: flex;
   flex-direction: column;
