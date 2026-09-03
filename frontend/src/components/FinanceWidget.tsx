@@ -37,6 +37,7 @@ export function FinanceWidget() {
       setLinked(result.linked)
       setNeedsReauth(result.needsReauth)
       setTransactions(result.transactions)
+      setError(null)
     } catch {
       setError("Couldn't load transactions.")
     }

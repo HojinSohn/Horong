@@ -164,6 +164,30 @@ describe('FinanceWidget', () => {
     expect(screen.getByRole('button', { name: 'Monthly' })).toHaveClass('active')
   })
 
+  it('clears a stale error message once a later fetch succeeds', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions')
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce({
+        linked: true,
+        needsReauth: false,
+        transactions: [
+          { id: 't1', date: '2026-09-01', name: 'Coffee Shop', amount: 4.5, category: 'Food and Drink', pending: false },
+        ],
+      })
+    const exchangeSpy = vi.spyOn(financeApi, 'exchangePublicToken').mockResolvedValue(undefined)
+
+    render(<FinanceWidget />)
+    await screen.findByText(/Couldn't load transactions/)
+
+    const lastCall = usePlaidLinkMock.mock.calls[usePlaidLinkMock.mock.calls.length - 1]
+    const onSuccess = (lastCall[0] as { onSuccess: (token: string) => void }).onSuccess
+    onSuccess('public-sandbox-fake')
+
+    await waitFor(() => expect(exchangeSpy).toHaveBeenCalledWith('public-sandbox-fake'))
+    await screen.findByText(/Coffee Shop/)
+    expect(screen.queryByText(/Couldn't load transactions/)).not.toBeInTheDocument()
+  })
+
   it('exchanges the public token and reloads transactions on Link success', async () => {
     vi.spyOn(financeApi, 'fetchTransactions')
       .mockResolvedValueOnce({ linked: false, needsReauth: false, transactions: [] })
