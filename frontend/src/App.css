@@ -99,6 +99,28 @@ body {
   opacity: 0.7;
 }
 
+.chat-message--thought,
+.chat-message--tool_call {
+  max-width: 100%;
+  background: transparent;
+  padding: 2px 0;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  color: #8a8f98;
+}
+
+.chat-message--thought summary,
+.chat-message--tool_call summary {
+  cursor: pointer;
+}
+
+.chat-message--thought span,
+.chat-message--tool_call span {
+  display: block;
+  margin: 4px 0 0 14px;
+  white-space: pre-wrap;
+}
+
 .chat-panel form {
   display: flex;
   gap: 8px;

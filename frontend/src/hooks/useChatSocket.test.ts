@@ -193,6 +193,62 @@ describe('useChatSocket', () => {
     expect(result.current.pending).toBe(false)
   })
 
+  it('accumulates streamed thought chunks into one collapsed thought entry', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    act(() => {
+      socket.emitMessage({ type: 'thought', text: 'Let me ' })
+      socket.emitMessage({ type: 'thought', text: 'check that.' })
+    })
+
+    expect(result.current.messages).toEqual([
+      { role: 'thought', text: 'Let me check that.', streaming: true },
+    ])
+  })
+
+  it('upserts a tool_call entry by id, preserving title/kind when a later update omits them', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    act(() => {
+      socket.emitMessage({ type: 'tool_call', id: 'tool-1', title: 'echo_lookup', kind: 'fetch', status: 'in_progress' })
+    })
+    expect(result.current.messages).toEqual([
+      { role: 'tool_call', id: 'tool-1', title: 'echo_lookup', kind: 'fetch', status: 'in_progress' },
+    ])
+
+    act(() => {
+      socket.emitMessage({ type: 'tool_call', id: 'tool-1', title: null, kind: null, status: 'completed' })
+    })
+    expect(result.current.messages).toEqual([
+      { role: 'tool_call', id: 'tool-1', title: 'echo_lookup', kind: 'fetch', status: 'completed' },
+    ])
+  })
+
+  it('interleaves thought, tool_call, and chunk entries in the real order they arrived', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    act(() => {
+      result.current.sendPrompt('what tools do you have?')
+    })
+    act(() => {
+      socket.emitMessage({ type: 'thought', text: 'thinking about echo' })
+      socket.emitMessage({ type: 'tool_call', id: 'tool-1', title: 'echo_lookup', kind: 'fetch', status: 'in_progress' })
+      socket.emitMessage({ type: 'tool_call', id: 'tool-1', title: null, kind: null, status: 'completed' })
+      socket.emitMessage({ type: 'chunk', text: 'echo: hi' })
+      socket.emitMessage({ type: 'done' })
+    })
+
+    expect(result.current.messages).toEqual([
+      { role: 'user', text: 'what tools do you have?', streaming: false },
+      { role: 'thought', text: 'thinking about echo', streaming: false },
+      { role: 'tool_call', id: 'tool-1', title: 'echo_lookup', kind: 'fetch', status: 'completed' },
+      { role: 'assistant', text: 'echo: hi', streaming: false },
+    ])
+  })
+
   it('reports connectionState as connecting, then open, then closed', () => {
     const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
     const socket = FakeWebSocket.instances[0]

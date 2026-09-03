@@ -74,6 +74,31 @@ describe('ChatPanel', () => {
     expect(screen.getByText('Horong is thinking…')).toBeInTheDocument()
   })
 
+  it('renders a thought entry as a collapsible summary with the full text inside', () => {
+    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+      messages: [{ role: 'thought', text: 'thinking about echo', streaming: false }],
+      connectionState: 'open',
+      pending: false,
+      sendPrompt: vi.fn(),
+    })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    expect(screen.getByText('Thinking…')).toBeInTheDocument()
+    expect(screen.getByText('thinking about echo')).toBeInTheDocument()
+  })
+
+  it('renders a tool_call entry as a collapsible summary naming the tool and its status', () => {
+    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+      messages: [{ role: 'tool_call', id: 'tool-1', title: 'echo_lookup', kind: 'fetch', status: 'completed' }],
+      connectionState: 'open',
+      pending: false,
+      sendPrompt: vi.fn(),
+    })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    expect(screen.getByText('tool: echo_lookup — completed')).toBeInTheDocument()
+  })
+
   it('renders a visible error message when a send is dropped while not connected', () => {
     vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
       messages: [

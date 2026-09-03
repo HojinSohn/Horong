@@ -26,11 +26,33 @@ export function ChatPanel({ wsUrl }: ChatPanelProps) {
     <div className="chat-panel">
       <div className="chat-status">{statusText(connectionState)}</div>
       <ul className="chat-messages">
-        {messages.map((message, index) => (
-          <li key={index} className={`chat-message chat-message--${message.role}`}>
-            {message.text}
-          </li>
-        ))}
+        {messages.map((message, index) => {
+          if (message.role === 'tool_call') {
+            return (
+              <li key={index} className="chat-message chat-message--tool_call">
+                <details>
+                  <summary>tool: {message.title ?? message.id} — {message.status ?? 'pending'}</summary>
+                  <span>id: {message.id}{message.kind ? ` · kind: ${message.kind}` : ''}</span>
+                </details>
+              </li>
+            )
+          }
+          if (message.role === 'thought') {
+            return (
+              <li key={index} className="chat-message chat-message--thought">
+                <details open={message.streaming}>
+                  <summary>Thinking…</summary>
+                  <span>{message.text}</span>
+                </details>
+              </li>
+            )
+          }
+          return (
+            <li key={index} className={`chat-message chat-message--${message.role}`}>
+              {message.text}
+            </li>
+          )
+        })}
         {pending && <li className="chat-message chat-message--assistant chat-message--pending">Horong is thinking…</li>}
       </ul>
       <form onSubmit={submit}>
