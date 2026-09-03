@@ -7,12 +7,17 @@ export function FinanceWidget() {
   const [linked, setLinked] = useState(false)
   const [needsReauth, setNeedsReauth] = useState(false)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   const loadTransactions = useCallback(async () => {
-    const result = await fetchTransactions()
-    setLinked(result.linked)
-    setNeedsReauth(result.needsReauth)
-    setTransactions(result.transactions)
+    try {
+      const result = await fetchTransactions()
+      setLinked(result.linked)
+      setNeedsReauth(result.needsReauth)
+      setTransactions(result.transactions)
+    } catch {
+      setError("Couldn't load transactions.")
+    }
   }, [])
 
   useEffect(() => {
@@ -21,14 +26,18 @@ export function FinanceWidget() {
 
   useEffect(() => {
     if (!linked) {
-      fetchLinkToken().then(setLinkToken)
+      fetchLinkToken()
+        .then(setLinkToken)
+        .catch(() => setError("Couldn't connect to bank linking."))
     }
   }, [linked])
 
   const onSuccess = useCallback(
     (publicToken: string | null) => {
       if (!publicToken) return
-      exchangePublicToken(publicToken).then(loadTransactions)
+      exchangePublicToken(publicToken)
+        .then(loadTransactions)
+        .catch(() => setError("Couldn't link your bank."))
     },
     [loadTransactions],
   )
@@ -44,6 +53,7 @@ export function FinanceWidget() {
         </button>
       )}
       {linked && needsReauth && <p className="finance-reauth">Reconnect your bank to keep syncing.</p>}
+      {error && <p className="finance-error">{error}</p>}
       {linked && (
         <ul className="finance-transactions">
           {transactions.map((txn) => (

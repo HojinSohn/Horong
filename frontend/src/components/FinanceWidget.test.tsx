@@ -11,11 +11,15 @@ vi.mock('react-plaid-link', () => ({
 describe('FinanceWidget', () => {
   beforeEach(() => {
     usePlaidLinkMock.mockReturnValue({ open: vi.fn(), ready: true })
+    // The widget always calls fetchLinkToken() on mount whenever it isn't
+    // linked yet (the initial state, regardless of what fetchTransactions
+    // resolves to), so every test needs this mocked or it fires a real
+    // fetch() against the live deployed finance service.
+    vi.spyOn(financeApi, 'fetchLinkToken').mockResolvedValue('link-sandbox-fake')
   })
 
   it('shows a connect button when nothing is linked', async () => {
     vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({ linked: false, needsReauth: false, transactions: [] })
-    vi.spyOn(financeApi, 'fetchLinkToken').mockResolvedValue('link-sandbox-fake')
 
     render(<FinanceWidget />)
 
@@ -44,6 +48,14 @@ describe('FinanceWidget', () => {
     expect(await screen.findByText(/Reconnect your bank/)).toBeInTheDocument()
   })
 
+  it('shows a visible error message when fetching transactions fails', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockRejectedValue(new Error('network down'))
+
+    render(<FinanceWidget />)
+
+    expect(await screen.findByText(/Couldn't load transactions/)).toBeInTheDocument()
+  })
+
   it('exchanges the public token and reloads transactions on Link success', async () => {
     vi.spyOn(financeApi, 'fetchTransactions')
       .mockResolvedValueOnce({ linked: false, needsReauth: false, transactions: [] })
@@ -54,7 +66,6 @@ describe('FinanceWidget', () => {
           { id: 't1', date: '2026-09-01', name: 'Coffee Shop', amount: 4.5, category: 'Food and Drink', pending: false },
         ],
       })
-    vi.spyOn(financeApi, 'fetchLinkToken').mockResolvedValue('link-sandbox-fake')
     const exchangeSpy = vi.spyOn(financeApi, 'exchangePublicToken').mockResolvedValue(undefined)
 
     render(<FinanceWidget />)
