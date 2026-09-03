@@ -48,6 +48,19 @@ describe('FinanceWidget', () => {
     expect(await screen.findByText(/Reconnect your bank/)).toBeInTheDocument()
   })
 
+  it('shows an enabled Connect your bank button when the item needs re-auth', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({ linked: true, needsReauth: true, transactions: [] })
+
+    render(<FinanceWidget />)
+
+    const button = await screen.findByText('Connect your bank')
+    expect(button).toBeInTheDocument()
+    expect(button).not.toBeDisabled()
+    // A fresh link token must be fetched even though `linked` is already true,
+    // otherwise the button would be non-functional despite being rendered.
+    expect(financeApi.fetchLinkToken).toHaveBeenCalled()
+  })
+
   it('shows a visible error message when fetching transactions fails', async () => {
     vi.spyOn(financeApi, 'fetchTransactions').mockRejectedValue(new Error('network down'))
 

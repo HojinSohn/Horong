@@ -25,12 +25,12 @@ export function FinanceWidget() {
   }, [loadTransactions])
 
   useEffect(() => {
-    if (!linked) {
+    if (!linked || needsReauth) {
       fetchLinkToken()
         .then(setLinkToken)
         .catch(() => setError("Couldn't connect to bank linking."))
     }
-  }, [linked])
+  }, [linked, needsReauth])
 
   const onSuccess = useCallback(
     (publicToken: string | null) => {
@@ -47,7 +47,7 @@ export function FinanceWidget() {
   return (
     <div className="widget-card">
       <h2>Finance</h2>
-      {!linked && (
+      {(!linked || needsReauth) && (
         <button type="button" onClick={() => open()} disabled={!ready}>
           Connect your bank
         </button>
