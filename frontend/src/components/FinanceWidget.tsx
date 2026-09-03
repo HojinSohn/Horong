@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePlaidLink } from 'react-plaid-link'
 import { exchangePublicToken, fetchLinkToken, fetchTransactions, type Transaction } from '../lib/financeApi'
+import { currencyFormatter } from '../lib/spending'
+import { SpendingBarChart } from './SpendingBarChart'
+import { SpendingPieChart } from './SpendingPieChart'
 
 // Plaid's own sign convention: positive = money out (a debit/spend),
 // negative = money in (a credit/refund). We flip credits to a leading "+"
 // and color them, since a bare minus sign ("$-500.00") reads as a typo,
 // not as "money came back."
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 function formatAmount(amount: number): string {
@@ -73,6 +75,12 @@ export function FinanceWidget() {
       )}
       {linked && needsReauth && <p className="finance-reauth">Reconnect your bank to keep syncing.</p>}
       {error && <p className="finance-error">{error}</p>}
+      {linked && transactions.length > 0 && (
+        <>
+          <SpendingPieChart transactions={transactions} />
+          <SpendingBarChart transactions={transactions} />
+        </>
+      )}
       {linked && (
         <ul className="finance-transactions">
           {transactions.map((txn) => (

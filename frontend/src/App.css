@@ -24,7 +24,7 @@ body {
 
 .dashboard {
   display: grid;
-  grid-template-columns: 280px 1fr 280px;
+  grid-template-columns: 500px 1fr 500px;
   gap: 12px;
   height: 100vh;
   padding: 12px;
@@ -55,6 +55,45 @@ body {
   margin: 0;
   padding-left: 16px;
   font-size: 0.9rem;
+}
+
+.finance-chart {
+  margin-top: 12px;
+}
+
+.finance-chart h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  margin: 0 0 4px;
+}
+
+.finance-chart__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.finance-period-toggle {
+  display: flex;
+  gap: 2px;
+}
+
+.finance-period-toggle button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: #8a8f98;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.finance-period-toggle button.active {
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 .finance-transactions {
