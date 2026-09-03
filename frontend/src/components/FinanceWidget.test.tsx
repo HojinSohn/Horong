@@ -81,7 +81,7 @@ describe('FinanceWidget', () => {
 
     render(<FinanceWidget />)
 
-    expect(await screen.findByText('$500.00')).toBeInTheDocument()
+    expect(await screen.findByText('$500.00', { selector: '.finance-txn__amount' })).toBeInTheDocument()
     const credit = await screen.findByText('+$500.00')
     expect(credit).toHaveClass('finance-txn__amount--credit')
   })
@@ -151,7 +151,30 @@ describe('FinanceWidget', () => {
     render(<FinanceWidget />)
 
     expect(await screen.findByText(/Income \(this week\)/)).toBeInTheDocument()
-    expect(screen.getByText('$2,000.00')).toBeInTheDocument()
+    expect(screen.getByText('$2,000.00', { selector: '.finance-income-stat strong' })).toBeInTheDocument()
+  })
+
+  it('shows total spending for the selected period, excluding credit-card-payment transfers', async () => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({
+      linked: true,
+      needsReauth: false,
+      transactions: [
+        { id: 't1', date: '2026-08-27', name: 'Groceries', amount: 80, category: 'Food and Drink', pending: false },
+        {
+          id: 't2',
+          date: '2026-08-27',
+          name: 'Online Banking payment to CRD 1729 Confirmation# z71g6b9b2',
+          amount: 1050.62,
+          category: 'Payment',
+          pending: false,
+        },
+      ],
+    })
+
+    render(<FinanceWidget />)
+
+    expect(await screen.findByText(/Spending \(this week\)/)).toBeInTheDocument()
+    expect(screen.getByText('$80.00', { selector: '.finance-spending-stat strong' })).toBeInTheDocument()
   })
 
   it('shares one Weekly/Monthly toggle across both charts, defaulting to Weekly', async () => {

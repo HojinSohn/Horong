@@ -106,3 +106,9 @@ export function totalIncome(transactions: Transaction[], period: Period): number
     .filter((txn) => txn.amount < 0 && !isCardPaymentTransfer(txn))
     .reduce((sum, txn) => sum + Math.abs(txn.amount), 0)
 }
+
+export function totalSpending(transactions: Transaction[], period: Period): number {
+  return filterToLatestPeriod(transactions, period)
+    .filter((txn) => txn.amount > 0 && !isCardPaymentTransfer(txn))
+    .reduce((sum, txn) => sum + txn.amount, 0)
+}

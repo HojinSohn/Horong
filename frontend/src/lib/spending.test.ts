@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { filterToLatestPeriod, groupSpendingByCategory, groupSpendingByPeriod, totalIncome } from './spending'
+import {
+  filterToLatestPeriod,
+  groupSpendingByCategory,
+  groupSpendingByPeriod,
+  totalIncome,
+  totalSpending,
+} from './spending'
 import type { Transaction } from './financeApi'
 
 function txn(overrides: Partial<Transaction>): Transaction {
@@ -186,6 +192,53 @@ describe('totalIncome', () => {
 
   it('returns 0 when there are no credits in the latest period', () => {
     const result = totalIncome([txn({ date: '2026-08-15', amount: 50, category: 'Food and Drink' })], 'month')
+
+    expect(result).toBe(0)
+  })
+})
+
+describe('totalSpending', () => {
+  it('sums spend in the latest period only', () => {
+    const result = totalSpending(
+      [
+        txn({ id: 'aug-a', date: '2026-08-15', amount: 50, category: 'Food and Drink' }),
+        txn({ id: 'aug-b', date: '2026-08-16', amount: 30, category: 'Shops' }),
+        txn({ id: 'jul', date: '2026-07-15', amount: 200, category: 'Travel' }),
+      ],
+      'month',
+    )
+
+    expect(result).toBe(80)
+  })
+
+  it('excludes credits/refunds', () => {
+    const result = totalSpending(
+      [txn({ date: '2026-08-15', amount: 50 }), txn({ date: '2026-08-16', amount: -20 })],
+      'month',
+    )
+
+    expect(result).toBe(50)
+  })
+
+  it('excludes checking-to-card transfers by name, regardless of category', () => {
+    const result = totalSpending(
+      [
+        txn({
+          date: '2026-08-15',
+          amount: 1050.62,
+          category: 'Payment',
+          name: 'Online Banking payment to CRD 1729 Confirmation# z71g6b9b2',
+        }),
+        txn({ date: '2026-08-16', amount: 50, category: 'Food and Drink' }),
+      ],
+      'month',
+    )
+
+    expect(result).toBe(50)
+  })
+
+  it('returns 0 when there is no spend in the latest period', () => {
+    const result = totalSpending([txn({ date: '2026-08-15', amount: -50, category: 'Payroll' })], 'month')
 
     expect(result).toBe(0)
   })

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePlaidLink } from 'react-plaid-link'
 import { exchangePublicToken, fetchLinkToken, fetchTransactions, type Transaction } from '../lib/financeApi'
-import { currencyFormatter, totalIncome, type Period } from '../lib/spending'
+import { currencyFormatter, totalIncome, totalSpending, type Period } from '../lib/spending'
 import { SpendingBarChart } from './SpendingBarChart'
 import { SpendingPieChart } from './SpendingPieChart'
 
@@ -94,6 +94,10 @@ export function FinanceWidget() {
           <p className="finance-income-stat">
             Income ({period === 'week' ? 'this week' : 'this month'}):{' '}
             <strong>{currencyFormatter.format(totalIncome(transactions, period))}</strong>
+          </p>
+          <p className="finance-spending-stat">
+            Spending ({period === 'week' ? 'this week' : 'this month'}):{' '}
+            <strong>{currencyFormatter.format(totalSpending(transactions, period))}</strong>
           </p>
           <SpendingPieChart transactions={transactions} period={period} />
           <SpendingBarChart transactions={transactions} period={period} />
