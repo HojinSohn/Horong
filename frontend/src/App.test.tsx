@@ -1,8 +1,18 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import * as financeApi from './lib/financeApi'
+
+vi.mock('react-plaid-link', () => ({
+  usePlaidLink: () => ({ open: vi.fn(), ready: false }),
+}))
 
 describe('App', () => {
+  beforeEach(() => {
+    vi.spyOn(financeApi, 'fetchTransactions').mockResolvedValue({ linked: false, needsReauth: false, transactions: [] })
+    vi.spyOn(financeApi, 'fetchLinkToken').mockResolvedValue('link-sandbox-fake')
+  })
+
   it('renders the three-column layout regions', () => {
     render(<App />)
     expect(screen.getByLabelText('Job tracking and notes')).toBeInTheDocument()

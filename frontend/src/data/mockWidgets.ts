@@ -10,6 +10,5 @@ export const leftWidgets: MockWidget[] = [
 ]
 
 export const rightWidgets: MockWidget[] = [
-  { title: 'Finance', lines: ['Checking: $4,213.10', 'Savings: $12,900.00'] },
   { title: 'Stock Profile', lines: ['AAPL 231.14 +1.2%', 'NVDA 118.02 -0.4%'] },
 ]

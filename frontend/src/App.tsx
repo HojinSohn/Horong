@@ -1,5 +1,6 @@
 import './App.css'
 import { ChatPanel } from './components/ChatPanel'
+import { FinanceWidget } from './components/FinanceWidget'
 import { WidgetCard } from './components/WidgetCard'
 import { leftWidgets, rightWidgets } from './data/mockWidgets'
 
@@ -17,6 +18,7 @@ export default function App() {
         <ChatPanel wsUrl={BRIDGE_WS_URL} />
       </main>
       <aside aria-label="Finance and stocks">
+        <FinanceWidget />
         {rightWidgets.map((widget) => (
           <WidgetCard key={widget.title} {...widget} />
         ))}
