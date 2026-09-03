@@ -1,0 +1,81 @@
+from unittest.mock import MagicMock
+
+import pytest
+from plaid.exceptions import ApiException
+
+from finance_service.plaid_client import ItemLoginRequiredError, PlaidClient
+
+
+@pytest.fixture
+def client():
+    return PlaidClient(client_id="fake-id", secret="fake-secret", environment="sandbox")
+
+
+def _fake_transaction(transaction_id: str, amount: float = 4.5) -> MagicMock:
+    txn = MagicMock()
+    txn.transaction_id = transaction_id
+    txn.date = "2026-09-01"
+    txn.name = "Coffee Shop"
+    txn.amount = amount
+    txn.category = ["Food and Drink"]
+    txn.pending = False
+    return txn
+
+
+def test_create_link_token_returns_the_token(client, monkeypatch):
+    response = MagicMock(link_token="link-sandbox-fake")
+    monkeypatch.setattr(client._api, "link_token_create", MagicMock(return_value=response))
+
+    assert client.create_link_token() == "link-sandbox-fake"
+
+
+def test_exchange_public_token_returns_access_token_and_item_id(client, monkeypatch):
+    response = MagicMock(access_token="access-sandbox-fake", item_id="item-fake")
+    monkeypatch.setattr(client._api, "item_public_token_exchange", MagicMock(return_value=response))
+
+    access_token, item_id = client.exchange_public_token("public-sandbox-fake")
+
+    assert access_token == "access-sandbox-fake"
+    assert item_id == "item-fake"
+
+
+def test_sync_transactions_paginates_until_has_more_is_false(client, monkeypatch):
+    page1 = MagicMock(
+        added=[_fake_transaction("t1")], modified=[], removed=[], next_cursor="cursor-1", has_more=True
+    )
+    page2 = MagicMock(
+        added=[_fake_transaction("t2")], modified=[], removed=[], next_cursor="cursor-2", has_more=False
+    )
+    monkeypatch.setattr(client._api, "transactions_sync", MagicMock(side_effect=[page1, page2]))
+
+    result = client.sync_transactions("access-sandbox-fake", cursor=None)
+
+    assert [t["transaction_id"] for t in result.added] == ["t1", "t2"]
+    assert result.next_cursor == "cursor-2"
+
+
+def test_sync_transactions_simplifies_transaction_fields(client, monkeypatch):
+    page = MagicMock(
+        added=[_fake_transaction("t1", amount=12.34)], modified=[], removed=[], next_cursor="cursor-1", has_more=False
+    )
+    monkeypatch.setattr(client._api, "transactions_sync", MagicMock(return_value=page))
+
+    result = client.sync_transactions("access-sandbox-fake", cursor=None)
+
+    assert result.added[0] == {
+        "transaction_id": "t1",
+        "date": "2026-09-01",
+        "name": "Coffee Shop",
+        "amount": 12.34,
+        "category": "Food and Drink",
+        "pending": False,
+    }
+
+
+def test_sync_transactions_raises_item_login_required_on_that_plaid_error(client, monkeypatch):
+    error = ApiException(status=400)
+    error.body = '{"error_code": "ITEM_LOGIN_REQUIRED"}'
+    monkeypatch.setattr(client._api, "transactions_sync", MagicMock(side_effect=error))
+
+    with pytest.raises(ItemLoginRequiredError):
+        client.sync_transactions("access-sandbox-fake", cursor=None)
