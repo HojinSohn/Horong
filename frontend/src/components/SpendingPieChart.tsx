@@ -35,7 +35,7 @@ export function SpendingPieChart({ transactions, period }: SpendingPieChartProps
             const percent = entry ? Math.round((entry.total / grandTotal) * 100) : 0
             return `${value} — ${percent}%`
           }}
-          wrapperStyle={{ fontSize: 11, color: '#c3c2b7', width: 130 }}
+          wrapperStyle={{ fontSize: 11, color: 'var(--muted)', width: 130 }}
         />
       </PieChart>
     </div>

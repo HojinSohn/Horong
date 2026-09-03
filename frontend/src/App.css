@@ -1,10 +1,15 @@
 :root {
   color-scheme: dark;
-  --bg: #14161a;
-  --panel: #1c1f26;
-  --text: #e6e6e6;
-  --accent: #6c8cff;
-  --border: #2a2e37;
+  --bg: #08090c;
+  --panel: #101218;
+  --surface-2: #181b22; /* one step up from --panel: assistant chat bubble, etc. */
+  --text: #f4f4f5;
+  --muted: #71717a;
+  --accent: #8b7cff;
+  --accent-secondary: #5eead4; /* used sparingly — one distinct spot, not the default accent */
+  --border: rgba(255, 255, 255, 0.1);
+  --status-good: #4ade80;
+  --status-bad: #f87171;
 }
 
 * {
@@ -24,7 +29,7 @@ body {
 
 .dashboard {
   display: grid;
-  grid-template-columns: 500px 1fr 500px;
+  grid-template-columns: 350px 1fr 350px;
   gap: 12px;
   height: 100vh;
   padding: 12px;
@@ -78,7 +83,7 @@ body {
 .finance-period-toggle button {
   background: transparent;
   border: 1px solid var(--border);
-  color: #8a8f98;
+  color: var(--muted);
   font-size: 0.7rem;
   padding: 2px 8px;
   border-radius: 4px;
@@ -86,7 +91,7 @@ body {
 }
 
 .finance-period-toggle button.active {
-  border-color: var(--accent);
+  border-color: var(--accent-secondary);
   color: var(--text);
 }
 
@@ -128,7 +133,7 @@ body {
 }
 
 .finance-txn__amount--credit {
-  color: #4ade80;
+  color: var(--status-good);
 }
 
 .finance-txn__meta {
@@ -136,7 +141,7 @@ body {
   gap: 6px;
   margin-top: 2px;
   font-size: 0.75rem;
-  color: #8a8f98;
+  color: var(--muted);
 }
 
 .finance-txn__pending {
@@ -150,7 +155,7 @@ body {
 }
 
 .finance-error {
-  color: #f87171;
+  color: var(--status-bad);
 }
 
 .chat-panel {
@@ -161,7 +166,7 @@ body {
 
 .chat-status {
   font-size: 0.75rem;
-  color: #8a8f98;
+  color: var(--muted);
   margin-bottom: 8px;
 }
 
@@ -187,7 +192,7 @@ body {
 }
 
 .chat-message--assistant {
-  background: #262a33;
+  background: var(--surface-2);
 }
 
 .chat-message--pending {
@@ -202,7 +207,7 @@ body {
   padding: 2px 0;
   margin-bottom: 4px;
   font-size: 0.8rem;
-  color: #8a8f98;
+  color: var(--muted);
 }
 
 .chat-message--thought summary,
@@ -235,7 +240,7 @@ body {
   background: var(--accent);
   border: none;
   border-radius: 6px;
-  color: #0b0c0f;
+  color: var(--bg);
   padding: 8px 14px;
   cursor: pointer;
 }

@@ -2,7 +2,7 @@ import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts'
 import type { Transaction } from '../lib/financeApi'
 import { currencyFormatter, groupSpendingByPeriod, type Period } from '../lib/spending'
 
-const AXIS_TICK_STYLE = { fontSize: 10, fill: '#898781' }
+const AXIS_TICK_STYLE = { fontSize: 10, fill: 'var(--muted)' }
 
 interface SpendingBarChartProps {
   transactions: Transaction[]
