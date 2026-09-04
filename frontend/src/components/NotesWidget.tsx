@@ -85,7 +85,7 @@ export function NotesWidget({ refreshKey }: NotesWidgetProps) {
   }
 
   return (
-    <div className="widget-card">
+    <div className="widget-card notes-widget">
       <h2>Notes</h2>
       {error && <p className="notes-error">{error}</p>}
       <ul>

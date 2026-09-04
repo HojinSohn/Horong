@@ -110,6 +110,35 @@ body::before {
   border-top: 1px solid var(--panel-edge);
 }
 
+/* The Notes half fills with a single widget that pins its own form to
+   the bottom, so this half stops scrolling itself — .notes-widget's
+   own <ul> scrolls instead, and owns the padding this half would
+   otherwise duplicate. */
+.job-notes-column__half:last-child {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: hidden;
+}
+
+.notes-widget {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.notes-widget ul {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.notes-widget .notes-form {
+  flex-shrink: 0;
+}
+
 /* Light catching the top edge of each pane */
 .dashboard > aside::after,
 .dashboard > main::after {
