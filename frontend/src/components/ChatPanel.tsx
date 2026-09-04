@@ -1,8 +1,11 @@
 import { useState, type FormEvent } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useChatSocket, type ConnectionState } from '../hooks/useChatSocket'
 
 interface ChatPanelProps {
   wsUrl: string
+  onTurnComplete?: () => void
 }
 
 function statusText(connectionState: ConnectionState) {
@@ -11,8 +14,8 @@ function statusText(connectionState: ConnectionState) {
   return 'Connecting…'
 }
 
-export function ChatPanel({ wsUrl }: ChatPanelProps) {
-  const { messages, connectionState, pending, sendPrompt } = useChatSocket(wsUrl)
+export function ChatPanel({ wsUrl, onTurnComplete }: ChatPanelProps) {
+  const { messages, connectionState, pending, sendPrompt } = useChatSocket(wsUrl, onTurnComplete)
   const [draft, setDraft] = useState('')
 
   const submit = (event: FormEvent) => {
@@ -49,7 +52,11 @@ export function ChatPanel({ wsUrl }: ChatPanelProps) {
           }
           return (
             <li key={index} className={`chat-message chat-message--${message.role}`}>
-              {message.text}
+              {message.role === 'assistant' ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
+              ) : (
+                message.text
+              )}
             </li>
           )
         })}

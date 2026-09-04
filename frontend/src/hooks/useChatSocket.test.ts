@@ -249,6 +249,33 @@ describe('useChatSocket', () => {
     ])
   })
 
+  it('invokes onTurnComplete once per done message', () => {
+    const onTurnComplete = vi.fn()
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws', onTurnComplete))
+    const socket = FakeWebSocket.instances[0]
+
+    act(() => {
+      result.current.sendPrompt('hello')
+    })
+    act(() => {
+      socket.emitMessage({ type: 'chunk', text: 'Hi' })
+      socket.emitMessage({ type: 'done' })
+    })
+
+    expect(onTurnComplete).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not error when onTurnComplete is omitted', () => {
+    renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    expect(() => {
+      act(() => {
+        socket.emitMessage({ type: 'done' })
+      })
+    }).not.toThrow()
+  })
+
   it('reports connectionState as connecting, then open, then closed', () => {
     const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
     const socket = FakeWebSocket.instances[0]

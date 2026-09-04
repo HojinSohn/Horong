@@ -99,6 +99,50 @@ describe('ChatPanel', () => {
     expect(screen.getByText('tool: echo_lookup — completed')).toBeInTheDocument()
   })
 
+  it('renders markdown in assistant messages', () => {
+    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+      messages: [{ role: 'assistant', text: 'Reminder: **deposit return** is due.', streaming: false }],
+      connectionState: 'open',
+      pending: false,
+      sendPrompt: vi.fn(),
+    })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    const strong = screen.getByText('deposit return')
+    expect(strong.tagName).toBe('STRONG')
+  })
+
+  it('renders a markdown table in assistant messages', () => {
+    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+      messages: [
+        {
+          role: 'assistant',
+          text: '| Field | Value |\n| --- | --- |\n| Schedule | 09:00 UTC |',
+          streaming: false,
+        },
+      ],
+      connectionState: 'open',
+      pending: false,
+      sendPrompt: vi.fn(),
+    })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    expect(screen.getByText('Schedule')).toBeInTheDocument()
+  })
+
+  it('renders user messages as plain text, not markdown', () => {
+    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+      messages: [{ role: 'user', text: 'is **this** bold?', streaming: false }],
+      connectionState: 'open',
+      pending: false,
+      sendPrompt: vi.fn(),
+    })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    expect(screen.getByText('is **this** bold?')).toBeInTheDocument()
+  })
+
   it('renders a visible error message when a send is dropped while not connected', () => {
     vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
       messages: [

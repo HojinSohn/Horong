@@ -64,11 +64,13 @@ function upsertToolCall(
   )
 }
 
-export function useChatSocket(url: string) {
+export function useChatSocket(url: string, onTurnComplete?: () => void) {
   const [messages, setMessages] = useState<TranscriptEntry[]>([])
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting')
   const [pending, setPending] = useState(false)
   const socketRef = useRef<WebSocket | null>(null)
+  const onTurnCompleteRef = useRef(onTurnComplete)
+  onTurnCompleteRef.current = onTurnComplete
 
   useEffect(() => {
     const socket = new WebSocket(url)
@@ -95,6 +97,9 @@ export function useChatSocket(url: string) {
         // data.type === 'error'
         return [...finalizeStreaming(prev), { role: 'assistant', text: `Error: ${data.message}`, streaming: false }]
       })
+      if (data.type === 'done') {
+        onTurnCompleteRef.current?.()
+      }
     }
     return () => socket.close()
   }, [url])
