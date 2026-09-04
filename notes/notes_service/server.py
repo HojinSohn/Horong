@@ -46,11 +46,11 @@ def build_app(storage: NotesStorage) -> Starlette:
     server = MCPServer("notes")
 
     @server.tool()
-    def add_note(text: str) -> str:
+    async def add_note(text: str) -> str:
         return _add_note(storage, text)
 
     @server.tool()
-    def list_notes() -> list[str]:
+    async def list_notes() -> list[str]:
         return _list_notes(storage)
 
     @server.custom_route("/notes", methods=["GET"])

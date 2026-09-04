@@ -22,6 +22,14 @@ class Note:
 
 
 def connect(db_path: str) -> "NotesStorage":
+    # check_same_thread=False: required for Starlette's TestClient, which
+    # runs the ASGI app inside a separate OS thread via anyio's blocking
+    # portal (anyio.from_thread.start_blocking_portal) — the storage object
+    # is created on the test's calling thread but exercised from that
+    # portal thread. Safe because sqlite3.threadsafety == 3 (serialized
+    # mode) on this build; MCP tool functions are async (see server.py) so
+    # in production nothing besides this test-harness indirection crosses
+    # threads.
     conn = sqlite3.connect(db_path, check_same_thread=False)
     conn.executescript(SCHEMA)
     conn.commit()
