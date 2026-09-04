@@ -1,0 +1,16 @@
+[Unit]
+Description=Horong custom-dashboard Notes MCP + REST service
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+WorkingDirectory=/root/hermes-dashboard-notes
+ExecStart=/root/hermes-dashboard-notes/venv/bin/python -m notes_service.main
+Restart=on-failure
+RestartSec=2
+Environment=NOTES_HOST=100.109.58.59
+Environment=NOTES_PORT=8767
+Environment=NOTES_DB_PATH=/root/hermes-dashboard-notes/notes.db
+
+[Install]
+WantedBy=default.target
