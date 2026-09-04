@@ -47,10 +47,12 @@ def build_app(storage: NotesStorage) -> Starlette:
 
     @server.tool()
     async def add_note(text: str) -> str:
+        """Save a short note to the user's dashboard notes list."""
         return _add_note(storage, text)
 
     @server.tool()
     async def list_notes() -> list[str]:
+        """List the user's saved notes, newest first."""
         return _list_notes(storage)
 
     @server.custom_route("/notes", methods=["GET"])
@@ -64,8 +66,20 @@ def build_app(storage: NotesStorage) -> Starlette:
             text = body["text"]
         except (ValueError, KeyError, TypeError):
             return JSONResponse({"error": "invalid request body"}, status_code=400)
+        if not isinstance(text, str) or not text.strip():
+            return JSONResponse({"error": "invalid request body"}, status_code=400)
         note = storage.add_note(text)
         return JSONResponse(_note_json(note), status_code=201)
+
+    @server.custom_route("/notes", methods=["OPTIONS"])
+    async def options_notes(request: Request) -> Response:
+        return Response(
+            status_code=204,
+            headers={
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type",
+            },
+        )
 
     app = server.streamable_http_app(
         transport_security=TransportSecuritySettings(allowed_hosts=[ALLOWED_HOST]),

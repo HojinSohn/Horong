@@ -56,6 +56,31 @@ def test_post_notes_missing_text_returns_400(storage):
         assert resp.status_code == 400
 
 
+@pytest.mark.parametrize("bad_text", [None, ["a", "list"], "   "])
+def test_post_notes_invalid_text_type_or_empty_returns_400(storage, bad_text):
+    app = build_app(storage)
+    with TestClient(app, base_url=BASE_URL) as client:
+        resp = client.post("/notes", json={"text": bad_text}, headers=ORIGIN)
+        assert resp.status_code == 400
+        assert resp.json()["error"] == "invalid request body"
+
+
+def test_options_notes_returns_204_with_cors_preflight_headers(storage):
+    app = build_app(storage)
+    with TestClient(app, base_url=BASE_URL) as client:
+        resp = client.options(
+            "/notes",
+            headers={
+                **ORIGIN,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        assert resp.status_code == 204
+        assert resp.headers["access-control-allow-methods"] == "GET, POST, OPTIONS"
+        assert resp.headers["access-control-allow-headers"] == "Content-Type"
+
+
 def test_disallowed_origin_is_rejected_on_notes_routes(storage):
     app = build_app(storage)
     with TestClient(app, base_url=BASE_URL) as client:
