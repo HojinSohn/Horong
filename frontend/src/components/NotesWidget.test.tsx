@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as notesApi from '../lib/notesApi'
 import { NotesWidget } from './NotesWidget'
@@ -8,6 +8,8 @@ describe('NotesWidget', () => {
     vi.restoreAllMocks()
     vi.spyOn(notesApi, 'fetchNotes').mockResolvedValue([])
     vi.spyOn(notesApi, 'addNote').mockResolvedValue(undefined)
+    vi.spyOn(notesApi, 'updateNote').mockResolvedValue(undefined)
+    vi.spyOn(notesApi, 'deleteNote').mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -66,5 +68,68 @@ describe('NotesWidget', () => {
 
     expect(await screen.findByText('added via chat')).toBeInTheDocument()
     expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('deletes a note via the delete button and refetches', async () => {
+    const deleteNoteSpy = vi.spyOn(notesApi, 'deleteNote').mockResolvedValue(undefined)
+    vi.spyOn(notesApi, 'fetchNotes')
+      .mockResolvedValueOnce([{ id: 1, text: 'to remove', createdAt: '2026-09-03T00:00:00Z' }])
+      .mockResolvedValueOnce([])
+
+    render(<NotesWidget refreshKey={0} />)
+    await screen.findByText('to remove')
+
+    fireEvent.click(screen.getByLabelText('Delete note: to remove'))
+
+    expect(deleteNoteSpy).toHaveBeenCalledWith(1)
+    await waitFor(() => expect(screen.queryByText('to remove')).not.toBeInTheDocument())
+  })
+
+  it('shows a visible error when deleting a note fails', async () => {
+    vi.spyOn(notesApi, 'deleteNote').mockRejectedValue(new Error('network down'))
+    vi.spyOn(notesApi, 'fetchNotes').mockResolvedValue([{ id: 1, text: 'stuck note', createdAt: '2026-09-03T00:00:00Z' }])
+
+    render(<NotesWidget refreshKey={0} />)
+    await screen.findByText('stuck note')
+
+    fireEvent.click(screen.getByLabelText('Delete note: stuck note'))
+
+    expect(await screen.findByText(/Couldn't delete note/)).toBeInTheDocument()
+  })
+
+  it('edits a note by clicking its text, saving on Enter', async () => {
+    const updateNoteSpy = vi.spyOn(notesApi, 'updateNote').mockResolvedValue(undefined)
+    vi.spyOn(notesApi, 'fetchNotes')
+      .mockResolvedValueOnce([{ id: 1, text: 'original', createdAt: '2026-09-03T00:00:00Z' }])
+      .mockResolvedValueOnce([{ id: 1, text: 'revised', createdAt: '2026-09-03T00:00:00Z' }])
+
+    render(<NotesWidget refreshKey={0} />)
+    await screen.findByText('original')
+
+    fireEvent.click(screen.getByText('original'))
+    const input = screen.getByDisplayValue('original') as HTMLInputElement
+    input.focus()
+    fireEvent.change(input, { target: { value: 'revised' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    await waitFor(() => expect(updateNoteSpy).toHaveBeenCalledWith(1, 'revised'))
+    expect(await screen.findByText('revised')).toBeInTheDocument()
+  })
+
+  it('cancels an edit on Escape without saving', async () => {
+    const updateNoteSpy = vi.spyOn(notesApi, 'updateNote').mockResolvedValue(undefined)
+    vi.spyOn(notesApi, 'fetchNotes').mockResolvedValue([{ id: 1, text: 'original', createdAt: '2026-09-03T00:00:00Z' }])
+
+    render(<NotesWidget refreshKey={0} />)
+    await screen.findByText('original')
+
+    fireEvent.click(screen.getByText('original'))
+    const input = screen.getByDisplayValue('original') as HTMLInputElement
+    input.focus()
+    fireEvent.change(input, { target: { value: 'discarded' } })
+    fireEvent.keyDown(input, { key: 'Escape' })
+
+    expect(updateNoteSpy).not.toHaveBeenCalled()
+    expect(await screen.findByText('original')).toBeInTheDocument()
   })
 })

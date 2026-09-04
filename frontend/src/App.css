@@ -254,6 +254,46 @@ body::before {
   margin: 8px 0 0;
 }
 
+.notes-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.notes-item__text {
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-item__delete {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.notes-item__delete:hover {
+  color: var(--status-bad);
+}
+
+.notes-edit-input {
+  flex: 1;
+  background: rgba(8, 7, 6, 0.55);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
 .notes-form {
   display: flex;
   gap: 6px;

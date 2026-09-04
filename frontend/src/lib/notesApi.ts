@@ -29,3 +29,21 @@ export async function addNote(text: string): Promise<void> {
     throw new Error(`notes API request failed: ${response.status}`)
   }
 }
+
+export async function updateNote(id: number, text: string): Promise<void> {
+  const response = await fetch(`${NOTES_BASE_URL}/notes/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+  if (!response.ok) {
+    throw new Error(`notes API request failed: ${response.status}`)
+  }
+}
+
+export async function deleteNote(id: number): Promise<void> {
+  const response = await fetch(`${NOTES_BASE_URL}/notes/${id}`, { method: 'DELETE' })
+  if (!response.ok) {
+    throw new Error(`notes API request failed: ${response.status}`)
+  }
+}
