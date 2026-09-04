@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { fetchOpenRouterUsage, type OpenRouterUsage } from '../lib/openrouterApi'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
@@ -6,25 +6,42 @@ const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', cu
 export function OpenRouterUsageBar() {
   const [usage, setUsage] = useState<OpenRouterUsage | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    fetchOpenRouterUsage()
-      .then(setUsage)
-      .catch(() => setError("Couldn't load OpenRouter usage."))
+  const loadUsage = useCallback(async () => {
+    setLoading(true)
+    try {
+      const result = await fetchOpenRouterUsage()
+      setUsage(result)
+      setError(null)
+    } catch {
+      setError("Couldn't load OpenRouter usage.")
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  if (error) {
-    return <div className="openrouter-bar openrouter-bar--error">{error}</div>
-  }
-  if (!usage) return null
+  useEffect(() => {
+    loadUsage()
+  }, [loadUsage])
 
   return (
     <div className="openrouter-bar">
       <span className="openrouter-bar__label">OpenRouter</span>
-      {usage.limitRemaining !== null && (
+      {error && <span className="openrouter-bar__error">{error}</span>}
+      {!error && usage && usage.limitRemaining !== null && (
         <span>{currencyFormatter.format(usage.limitRemaining)} remaining</span>
       )}
-      <span>{currencyFormatter.format(usage.usageWeekly)} used this week</span>
+      {!error && usage && <span>{currencyFormatter.format(usage.usageWeekly)} used this week</span>}
+      <button
+        type="button"
+        className="openrouter-bar__refresh"
+        onClick={loadUsage}
+        disabled={loading}
+        aria-label="Refresh OpenRouter usage"
+      >
+        ↻
+      </button>
     </div>
   )
 }

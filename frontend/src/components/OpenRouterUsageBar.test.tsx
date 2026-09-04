@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as openrouterApi from '../lib/openrouterApi'
 import { OpenRouterUsageBar } from './OpenRouterUsageBar'
@@ -48,11 +48,41 @@ describe('OpenRouterUsageBar', () => {
     expect(await screen.findByText(/Couldn't load OpenRouter usage/)).toBeInTheDocument()
   })
 
-  it('renders nothing before the fetch resolves', () => {
+  it('shows the label and refresh button before the fetch resolves', () => {
     vi.spyOn(openrouterApi, 'fetchOpenRouterUsage').mockReturnValue(new Promise(() => {}))
 
-    const { container } = render(<OpenRouterUsageBar />)
+    render(<OpenRouterUsageBar />)
 
-    expect(container.textContent).toBe('')
+    expect(screen.getByText('OpenRouter')).toBeInTheDocument()
+    expect(screen.getByLabelText('Refresh OpenRouter usage')).toBeInTheDocument()
+  })
+
+  it('refetches when the refresh button is clicked', async () => {
+    const fetchSpy = vi
+      .spyOn(openrouterApi, 'fetchOpenRouterUsage')
+      .mockResolvedValueOnce({
+        limitRemaining: 29.37,
+        usage: 10.32,
+        usageDaily: 0.13,
+        usageWeekly: 0.86,
+        usageMonthly: 0.63,
+        isFreeTier: false,
+      })
+      .mockResolvedValueOnce({
+        limitRemaining: 28.5,
+        usage: 11.19,
+        usageDaily: 0.15,
+        usageWeekly: 1.73,
+        usageMonthly: 1.5,
+        isFreeTier: false,
+      })
+
+    render(<OpenRouterUsageBar />)
+    await screen.findByText(/\$29\.37 remaining/)
+
+    fireEvent.click(screen.getByLabelText('Refresh OpenRouter usage'))
+
+    expect(await screen.findByText(/\$28\.50 remaining/)).toBeInTheDocument()
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
   })
 })

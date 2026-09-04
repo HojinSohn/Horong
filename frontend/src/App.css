@@ -360,8 +360,28 @@ body::before {
   color: var(--accent);
 }
 
-.openrouter-bar--error {
+.openrouter-bar__error {
   color: var(--status-bad);
+}
+
+.openrouter-bar__refresh {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.openrouter-bar__refresh:hover {
+  color: var(--accent);
+}
+
+.openrouter-bar__refresh:disabled {
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: default;
 }
 
 .chat-messages {
