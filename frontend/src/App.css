@@ -248,6 +248,44 @@ body::before {
   color: var(--status-bad);
 }
 
+.notes-error {
+  font-size: 0.85rem;
+  color: var(--status-bad);
+  margin: 8px 0 0;
+}
+
+.notes-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.notes-form input {
+  flex: 1;
+  background: rgba(8, 7, 6, 0.55);
+  border: 1px solid rgba(255, 250, 240, 0.07);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.notes-form input::placeholder {
+  color: var(--muted);
+}
+
+.notes-form button {
+  background: rgba(var(--accent-rgb), 0.9);
+  border: 1px solid rgba(var(--accent-rgb), 0.9);
+  border-radius: 8px;
+  color: #0d0b09;
+  font-weight: 600;
+  padding: 0 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
 .chat-panel {
   display: flex;
   flex-direction: column;

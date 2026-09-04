@@ -6,7 +6,6 @@ export interface MockWidget {
 export const leftWidgets: MockWidget[] = [
   { title: 'Job Tracking', lines: ['Acme Corp — interview scheduled', 'Globex — applied'] },
   { title: 'Job Search', lines: ['3 new matches for "platform engineer"'] },
-  { title: 'Notes', lines: ['Follow up with recruiter Friday'] },
 ]
 
 export const rightWidgets: MockWidget[] = [
