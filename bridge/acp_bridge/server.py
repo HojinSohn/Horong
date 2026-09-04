@@ -15,8 +15,10 @@ from acp_bridge.acp_client import open_session
 logger = logging.getLogger(__name__)
 
 
-async def handle_connection(ws: ServerConnection, hermes_cmd: Sequence[str], workspace_dir: str) -> None:
-    async with open_session(hermes_cmd, workspace_dir) as session:
+async def handle_connection(
+    ws: ServerConnection, hermes_cmd: Sequence[str], workspace_dir: str, notes_mcp_url: str | None = None
+) -> None:
+    async with open_session(hermes_cmd, workspace_dir, notes_mcp_url) as session:
 
         async def forward_updates() -> None:
             while True:
@@ -35,20 +37,24 @@ async def handle_connection(ws: ServerConnection, hermes_cmd: Sequence[str], wor
                 await forwarder
 
 
-def build_handler(hermes_cmd: Sequence[str], workspace_dir: str):
+def build_handler(hermes_cmd: Sequence[str], workspace_dir: str, notes_mcp_url: str | None = None):
     async def handler(ws: ServerConnection) -> None:
         try:
-            await handle_connection(ws, hermes_cmd, workspace_dir)
+            await handle_connection(ws, hermes_cmd, workspace_dir, notes_mcp_url)
         except Exception:
             logger.exception("bridge connection failed")
 
     return handler
 
 
-async def run_server(host: str, port: int, hermes_cmd: Sequence[str], workspace_dir: str) -> None:
+async def run_server(
+    host: str, port: int, hermes_cmd: Sequence[str], workspace_dir: str, notes_mcp_url: str | None = None
+) -> None:
     # Origin check: only the dashboard frontend may open a connection. Without
     # this, any page reachable on the tailnet could open a WebSocket here and
     # drive Horong with auto-approved tool execution as root.
-    async with serve(build_handler(hermes_cmd, workspace_dir), host, port, origins=["http://localhost:3000"]):
+    async with serve(
+        build_handler(hermes_cmd, workspace_dir, notes_mcp_url), host, port, origins=["http://localhost:3000"]
+    ):
         logger.info("bridge listening on %s:%s", host, port)
         await asyncio.Future()  # run forever

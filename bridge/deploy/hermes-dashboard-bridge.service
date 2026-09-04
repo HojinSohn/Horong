@@ -12,6 +12,7 @@ Environment=BRIDGE_HOST=100.109.58.59
 Environment=BRIDGE_PORT=8765
 Environment=HERMES_BIN=/usr/local/bin/hermes
 Environment=BRIDGE_WORKSPACE_DIR=/root/hermes-workspace
+Environment=NOTES_MCP_URL=http://100.109.58.59:8767/mcp
 
 [Install]
 WantedBy=default.target

@@ -12,6 +12,7 @@ from acp.schema import (
     ClientCapabilities,
     DeniedOutcome,
     FileSystemCapabilities,
+    HttpMcpServer,
     PermissionOption,
     ReadTextFileResponse,
     RequestPermissionResponse,
@@ -133,8 +134,16 @@ class HorongSession:
         await self.updates.put({"type": "done"})
 
 
+def _build_mcp_servers(notes_mcp_url: str | None) -> list[HttpMcpServer]:
+    if not notes_mcp_url:
+        return []
+    return [HttpMcpServer(name="dashboard-notes", url=notes_mcp_url, headers=[], type="http")]
+
+
 @asynccontextmanager
-async def open_session(hermes_cmd: Sequence[str], workspace_dir: str) -> AsyncIterator[HorongSession]:
+async def open_session(
+    hermes_cmd: Sequence[str], workspace_dir: str, notes_mcp_url: str | None = None
+) -> AsyncIterator[HorongSession]:
     updates: "asyncio.Queue[dict]" = asyncio.Queue()
     client = HorongClient(updates)
     async with spawn_agent_process(lambda _agent: client, hermes_cmd[0], *hermes_cmd[1:]) as (connection, _process):
@@ -145,5 +154,7 @@ async def open_session(hermes_cmd: Sequence[str], workspace_dir: str) -> AsyncIt
                 fs=FileSystemCapabilities(read_text_file=False, write_text_file=False),
             ),
         )
-        new_session = await connection.new_session(cwd=workspace_dir, mcp_servers=[])
+        new_session = await connection.new_session(
+            cwd=workspace_dir, mcp_servers=_build_mcp_servers(notes_mcp_url)
+        )
         yield HorongSession(connection, new_session.session_id, updates)

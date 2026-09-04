@@ -4,9 +4,22 @@ from pathlib import Path
 
 import pytest
 
-from acp_bridge.acp_client import open_session
+from acp_bridge.acp_client import _build_mcp_servers, open_session
 
 FIXTURE = [sys.executable, str(Path(__file__).parent / "fixtures" / "fake_acp_agent.py")]
+
+
+def test_build_mcp_servers_returns_empty_list_when_no_url_configured():
+    assert _build_mcp_servers(None) == []
+
+
+def test_build_mcp_servers_returns_the_notes_http_server_when_url_given():
+    result = _build_mcp_servers("http://100.109.58.59:8767/mcp")
+    assert len(result) == 1
+    assert result[0].name == "dashboard-notes"
+    assert result[0].url == "http://100.109.58.59:8767/mcp"
+    assert result[0].type == "http"
+    assert result[0].headers == []
 
 
 @pytest.mark.asyncio
