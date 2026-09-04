@@ -22,7 +22,7 @@ class Note:
 
 
 def connect(db_path: str) -> "NotesStorage":
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, check_same_thread=False)
     conn.executescript(SCHEMA)
     conn.commit()
     return NotesStorage(conn)
