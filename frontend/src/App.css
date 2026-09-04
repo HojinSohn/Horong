@@ -92,6 +92,24 @@ body::before {
     0 24px 60px rgba(0, 0, 0, 0.65);
 }
 
+.dashboard > aside.job-notes-column {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: hidden;
+}
+
+.job-notes-column__half {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.job-notes-column__half + .job-notes-column__half {
+  border-top: 1px solid var(--panel-edge);
+}
+
 /* Light catching the top edge of each pane */
 .dashboard > aside::after,
 .dashboard > main::after {
