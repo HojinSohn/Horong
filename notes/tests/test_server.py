@@ -1,7 +1,7 @@
 import pytest
 from starlette.testclient import TestClient
 
-from notes_service.server import ALLOWED_HOST, _add_note, _list_notes, build_app
+from notes_service.server import ALLOWED_HOST, _add_note, _delete_note, _list_notes, _update_note, build_app
 from notes_service.storage import connect
 
 ORIGIN = {"Origin": "http://localhost:3000"}
@@ -121,7 +121,102 @@ def test_add_note_tool_stores_and_returns_a_confirmation(storage):
     assert [n.text for n in storage.list_notes()] == ["Follow up with recruiter Friday"]
 
 
-def test_list_notes_tool_returns_text_only_newest_first(storage):
-    storage.add_note("first")
-    storage.add_note("second")
-    assert _list_notes(storage) == ["second", "first"]
+def test_list_notes_tool_returns_id_and_text_newest_first(storage):
+    first = storage.add_note("first")
+    second = storage.add_note("second")
+    assert _list_notes(storage) == [
+        {"id": second.id, "text": "second"},
+        {"id": first.id, "text": "first"},
+    ]
+
+
+def test_update_note_tool_changes_text_and_confirms(storage):
+    note = storage.add_note("original")
+    result = _update_note(storage, note.id, "revised")
+    assert result == "Updated note: revised"
+    assert [n.text for n in storage.list_notes()] == ["revised"]
+
+
+def test_update_note_tool_reports_when_id_not_found(storage):
+    result = _update_note(storage, 999, "revised")
+    assert result == "Note 999 not found."
+
+
+def test_delete_note_tool_removes_and_confirms(storage):
+    note = storage.add_note("to be deleted")
+    result = _delete_note(storage, note.id)
+    assert result == "Deleted note."
+    assert storage.list_notes() == []
+
+
+def test_delete_note_tool_reports_when_id_not_found(storage):
+    result = _delete_note(storage, 999)
+    assert result == "Note 999 not found."
+
+
+def test_patch_notes_updates_text_and_returns_it(storage):
+    note = storage.add_note("original")
+    app = build_app(storage)
+    with TestClient(app, base_url=BASE_URL) as client:
+        resp = client.patch(f"/notes/{note.id}", json={"text": "revised"}, headers=ORIGIN)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["id"] == note.id
+        assert body["text"] == "revised"
+    assert [n.text for n in storage.list_notes()] == ["revised"]
+
+
+def test_patch_notes_returns_404_when_id_not_found(storage):
+    app = build_app(storage)
+    with TestClient(app, base_url=BASE_URL) as client:
+        resp = client.patch("/notes/999", json={"text": "revised"}, headers=ORIGIN)
+        assert resp.status_code == 404
+
+
+@pytest.mark.parametrize("bad_text", [None, ["a", "list"], "   "])
+def test_patch_notes_invalid_text_type_or_empty_returns_400(storage, bad_text):
+    note = storage.add_note("original")
+    app = build_app(storage)
+    with TestClient(app, base_url=BASE_URL) as client:
+        resp = client.patch(f"/notes/{note.id}", json={"text": bad_text}, headers=ORIGIN)
+        assert resp.status_code == 400
+        assert resp.json()["error"] == "invalid request body"
+
+
+def test_delete_notes_removes_it_and_returns_204(storage):
+    note = storage.add_note("to be deleted")
+    app = build_app(storage)
+    with TestClient(app, base_url=BASE_URL) as client:
+        resp = client.delete(f"/notes/{note.id}", headers=ORIGIN)
+        assert resp.status_code == 204
+    assert storage.list_notes() == []
+
+
+def test_delete_notes_returns_404_when_id_not_found(storage):
+    app = build_app(storage)
+    with TestClient(app, base_url=BASE_URL) as client:
+        resp = client.delete("/notes/999", headers=ORIGIN)
+        assert resp.status_code == 404
+
+
+def test_options_notes_by_id_returns_204_with_cors_preflight_headers(storage):
+    app = build_app(storage)
+    with TestClient(app, base_url=BASE_URL) as client:
+        resp = client.options(
+            "/notes/1",
+            headers={
+                **ORIGIN,
+                "Access-Control-Request-Method": "PATCH",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        assert resp.status_code == 204
+        assert resp.headers["access-control-allow-methods"] == "PATCH, DELETE, OPTIONS"
+        assert resp.headers["access-control-allow-headers"] == "Content-Type"
+
+
+def test_disallowed_origin_is_rejected_on_notes_by_id_routes(storage):
+    app = build_app(storage)
+    with TestClient(app, base_url=BASE_URL) as client:
+        resp = client.delete("/notes/1", headers={"Origin": "http://evil.example.com"})
+        assert resp.status_code == 403

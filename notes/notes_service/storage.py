@@ -53,3 +53,20 @@ class NotesStorage:
             "SELECT id, text, created_at FROM notes ORDER BY id DESC"
         ).fetchall()
         return [Note(id=r[0], text=r[1], created_at=r[2]) for r in rows]
+
+    def update_note(self, id: int, text: str) -> Note | None:
+        cursor = self._conn.execute(
+            "UPDATE notes SET text = ? WHERE id = ?", (text, id)
+        )
+        self._conn.commit()
+        if cursor.rowcount == 0:
+            return None
+        row = self._conn.execute(
+            "SELECT id, text, created_at FROM notes WHERE id = ?", (id,)
+        ).fetchone()
+        return Note(id=row[0], text=row[1], created_at=row[2])
+
+    def delete_note(self, id: int) -> bool:
+        cursor = self._conn.execute("DELETE FROM notes WHERE id = ?", (id,))
+        self._conn.commit()
+        return cursor.rowcount > 0

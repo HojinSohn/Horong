@@ -30,3 +30,26 @@ def test_add_note_persists_across_reconnects(tmp_path):
     connect(db_path).add_note("persisted note")
     reopened = connect(db_path)
     assert [n.text for n in reopened.list_notes()] == ["persisted note"]
+
+
+def test_update_note_changes_text_and_returns_the_updated_note(storage):
+    note = storage.add_note("original")
+    updated = storage.update_note(note.id, "revised")
+    assert updated.id == note.id
+    assert updated.text == "revised"
+    assert updated.created_at == note.created_at  # unchanged
+    assert [n.text for n in storage.list_notes()] == ["revised"]
+
+
+def test_update_note_returns_none_when_id_does_not_exist(storage):
+    assert storage.update_note(999, "revised") is None
+
+
+def test_delete_note_removes_it_and_returns_true(storage):
+    note = storage.add_note("to be deleted")
+    assert storage.delete_note(note.id) is True
+    assert storage.list_notes() == []
+
+
+def test_delete_note_returns_false_when_id_does_not_exist(storage):
+    assert storage.delete_note(999) is False

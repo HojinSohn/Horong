@@ -38,8 +38,21 @@ def _add_note(storage: NotesStorage, text: str) -> str:
     return f"Added note: {note.text}"
 
 
-def _list_notes(storage: NotesStorage) -> list[str]:
-    return [note.text for note in storage.list_notes()]
+def _list_notes(storage: NotesStorage) -> list[dict]:
+    return [{"id": note.id, "text": note.text} for note in storage.list_notes()]
+
+
+def _update_note(storage: NotesStorage, id: int, text: str) -> str:
+    note = storage.update_note(id, text)
+    if note is None:
+        return f"Note {id} not found."
+    return f"Updated note: {note.text}"
+
+
+def _delete_note(storage: NotesStorage, id: int) -> str:
+    if storage.delete_note(id):
+        return "Deleted note."
+    return f"Note {id} not found."
 
 
 def build_app(storage: NotesStorage) -> Starlette:
@@ -51,9 +64,19 @@ def build_app(storage: NotesStorage) -> Starlette:
         return _add_note(storage, text)
 
     @server.tool()
-    async def list_notes() -> list[str]:
-        """List the user's saved notes, newest first."""
+    async def list_notes() -> list[dict]:
+        """List the user's saved notes (each with its id and text), newest first."""
         return _list_notes(storage)
+
+    @server.tool()
+    async def update_note(id: int, text: str) -> str:
+        """Change the text of an existing note. Call list_notes first to find its id."""
+        return _update_note(storage, id, text)
+
+    @server.tool()
+    async def delete_note(id: int) -> str:
+        """Delete a note. Call list_notes first to find its id."""
+        return _delete_note(storage, id)
 
     @server.custom_route("/notes", methods=["GET"])
     async def get_notes(request: Request) -> JSONResponse:
@@ -77,6 +100,36 @@ def build_app(storage: NotesStorage) -> Starlette:
             status_code=204,
             headers={
                 "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type",
+            },
+        )
+
+    @server.custom_route("/notes/{id}", methods=["PATCH"])
+    async def patch_note(request: Request) -> JSONResponse:
+        try:
+            body = await request.json()
+            text = body["text"]
+        except (ValueError, KeyError, TypeError):
+            return JSONResponse({"error": "invalid request body"}, status_code=400)
+        if not isinstance(text, str) or not text.strip():
+            return JSONResponse({"error": "invalid request body"}, status_code=400)
+        note = storage.update_note(int(request.path_params["id"]), text)
+        if note is None:
+            return JSONResponse({"error": "note not found"}, status_code=404)
+        return JSONResponse(_note_json(note))
+
+    @server.custom_route("/notes/{id}", methods=["DELETE"])
+    async def delete_note_route(request: Request) -> Response:
+        if storage.delete_note(int(request.path_params["id"])):
+            return Response(status_code=204)
+        return JSONResponse({"error": "note not found"}, status_code=404)
+
+    @server.custom_route("/notes/{id}", methods=["OPTIONS"])
+    async def options_note_by_id(request: Request) -> Response:
+        return Response(
+            status_code=204,
+            headers={
+                "Access-Control-Allow-Methods": "PATCH, DELETE, OPTIONS",
                 "Access-Control-Allow-Headers": "Content-Type",
             },
         )
