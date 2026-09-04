@@ -1,9 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as chatSocket from '../hooks/useChatSocket'
+import * as openrouterApi from '../lib/openrouterApi'
 import { ChatPanel } from './ChatPanel'
 
 describe('ChatPanel', () => {
+  beforeEach(() => {
+    // ChatPanel renders OpenRouterUsageBar next to the connection status;
+    // never-resolving keeps it harmlessly blank for tests that don't care.
+    vi.spyOn(openrouterApi, 'fetchOpenRouterUsage').mockReturnValue(new Promise(() => {}))
+  })
+
   it('sends the draft on submit and clears the input', () => {
     const sendPrompt = vi.fn()
     vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({

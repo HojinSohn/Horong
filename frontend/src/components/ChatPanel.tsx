@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useChatSocket, type ConnectionState } from '../hooks/useChatSocket'
+import { OpenRouterUsageBar } from './OpenRouterUsageBar'
 
 interface ChatPanelProps {
   wsUrl: string
@@ -27,7 +28,10 @@ export function ChatPanel({ wsUrl, onTurnComplete }: ChatPanelProps) {
 
   return (
     <div className="chat-panel">
-      <div className="chat-status">{statusText(connectionState)}</div>
+      <div className="chat-status-row">
+        <span className="chat-status">{statusText(connectionState)}</span>
+        <OpenRouterUsageBar />
+      </div>
       <ul className="chat-messages">
         {messages.map((message, index) => {
           if (message.role === 'tool_call') {
