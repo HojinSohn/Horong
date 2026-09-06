@@ -4,7 +4,12 @@ import { fetchLatestBriefing, type Briefing } from '../lib/briefingApi'
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000
 
-const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' })
+const timeFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+})
 
 export function BriefingWidget() {
   const [briefing, setBriefing] = useState<Briefing | null>(null)
@@ -31,14 +36,18 @@ export function BriefingWidget() {
       <h3>Daily Briefing</h3>
       {error && <p className="briefing-widget__error">{error}</p>}
       {!error && !briefing && <p className="briefing-widget__empty">No briefing yet.</p>}
-      {!error && briefing && (
-        <>
-          <div className="briefing-widget__text">
-            <ReactMarkdown>{briefing.text}</ReactMarkdown>
-          </div>
-          <span className="briefing-widget__time">{timeFormatter.format(new Date(briefing.createdAt))}</span>
-        </>
-      )}
+      {!error && briefing && (() => {
+        const createdAt = new Date(briefing.createdAt)
+        const formattedTime = Number.isNaN(createdAt.getTime()) ? null : timeFormatter.format(createdAt)
+        return (
+          <>
+            <div className="briefing-widget__text">
+              <ReactMarkdown>{briefing.text}</ReactMarkdown>
+            </div>
+            {formattedTime && <span className="briefing-widget__time">{formattedTime}</span>}
+          </>
+        )
+      })()}
     </div>
   )
 }

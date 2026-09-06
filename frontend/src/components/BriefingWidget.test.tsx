@@ -50,4 +50,28 @@ describe('BriefingWidget', () => {
     })
     expect(fetchSpy).toHaveBeenCalledTimes(2)
   })
+
+  it('formats the timestamp with a date, not just a time, so a stale briefing is distinguishable', async () => {
+    vi.spyOn(briefingApi, 'fetchLatestBriefing').mockResolvedValue({
+      text: 'Today: sunny.',
+      createdAt: '2026-09-06T09:00:00Z',
+    })
+
+    render(<BriefingWidget />)
+
+    await screen.findByText('sunny.', { exact: false })
+    expect(screen.getByText(/Sep 6/)).toBeInTheDocument()
+  })
+
+  it('does not crash and omits the timestamp when createdAt is not a valid date', async () => {
+    vi.spyOn(briefingApi, 'fetchLatestBriefing').mockResolvedValue({
+      text: 'Today: sunny.',
+      createdAt: 'not-a-real-date',
+    })
+
+    render(<BriefingWidget />)
+
+    await screen.findByText('sunny.', { exact: false })
+    expect(document.querySelector('.briefing-widget__time')).toBeNull()
+  })
 })

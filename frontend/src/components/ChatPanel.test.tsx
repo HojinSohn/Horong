@@ -179,4 +179,18 @@ describe('ChatPanel', () => {
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     expect(screen.getByText(/wasn't sent/)).toBeInTheDocument()
   })
+
+  it('renders the OpenRouter usage bar in the footer row, not the header', () => {
+    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+      messages: [],
+      connectionState: 'open',
+      pending: false,
+      sendPrompt: vi.fn(),
+    })
+
+    const { container } = render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    const footerRow = container.querySelector('.chat-footer-row')
+    expect(footerRow?.querySelector('.openrouter-bar')).not.toBeNull()
+    expect(container.querySelector('.chat-header .openrouter-bar')).toBeNull()
+  })
 })
