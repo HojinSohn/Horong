@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useChatSocket, type ConnectionState } from '../hooks/useChatSocket'
+import { BriefingWidget } from './BriefingWidget'
+import MalteseAvatar from './MalteseAvatar'
 import { OpenRouterUsageBar } from './OpenRouterUsageBar'
 
 interface ChatPanelProps {
@@ -28,9 +30,14 @@ export function ChatPanel({ wsUrl, onTurnComplete }: ChatPanelProps) {
 
   return (
     <div className="chat-panel">
-      <div className="chat-status-row">
-        <span className="chat-status">{statusText(connectionState)}</span>
-        <OpenRouterUsageBar />
+      <div className="chat-header">
+        <div className="chat-avatar-hero">
+          <div className="chat-avatar-ring">
+            <MalteseAvatar size={120} />
+          </div>
+          <span className="chat-status">{statusText(connectionState)}</span>
+        </div>
+        <BriefingWidget />
       </div>
       <ul className="chat-messages">
         {messages.map((message, index) => {
@@ -66,6 +73,9 @@ export function ChatPanel({ wsUrl, onTurnComplete }: ChatPanelProps) {
         })}
         {pending && <li className="chat-message chat-message--assistant chat-message--pending">Horong is thinking…</li>}
       </ul>
+      <div className="chat-footer-row">
+        <OpenRouterUsageBar />
+      </div>
       <form onSubmit={submit}>
         <input
           value={draft}

@@ -1,16 +1,16 @@
 :root {
   color-scheme: dark;
 
-  /* Near-black espresso base, much darker than before */
-  --bg: #080706;
+  /* Deep-space grayscale base */
+  --bg: #08080a;
   --bg-deep: #000000;
-  --bg-lift: #1c1811;
+  --bg-lift: #18181b;
 
-  /* Smoked glass layers */
-  --panel: rgba(20, 18, 16, 0.42);
-  --panel-edge: rgba(255, 252, 245, 0.06);
+  /* Glass layers — thin and transparent, frosted via backdrop-filter */
+  --panel: rgba(18, 20, 34, 0.22);
+  --panel-edge: rgba(255, 252, 245, 0.08);
   --panel-sheen: rgba(255, 250, 240, 0.09);
-  --surface-2: rgba(46, 42, 36, 0.45);
+  --surface-2: rgba(50, 54, 82, 0.26);
 
   --text: #f9f6f0;
   --muted: #98907f;
@@ -37,34 +37,12 @@ html, body, #root {
 
 body {
   background:
-    /* faint gold smoke drifting up from the lower left */
-    radial-gradient(55% 40% at 15% 110%, rgba(var(--accent-rgb), 0.1) 0%, transparent 65%),
-
-    radial-gradient(50% 50% at 50% 100%, rgba(132, 126, 119, 0.3) 0%, transparent 65%),
-
-    /* cool smoke from the right */
-    radial-gradient(90% 70% at 105% 30%, rgba(132, 126, 119, 0.3) 0%, transparent 60%),
-    /* warm ember at the top, falling off fast into black */
-    radial-gradient(circle at 50% -25%, #2e2b27 0%, #100d0a 38%, var(--bg) 62%),
-    /* vignette so the edges sink to true black */
-    linear-gradient(180deg, transparent 40%, var(--bg-deep) 100%),
     var(--bg);
   background-attachment: fixed;
   color: var(--text);
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-/* Film grain / smoke haze sitting over the gradient */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.35;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-}
 
 .dashboard {
   position: relative;
@@ -86,10 +64,24 @@ body::before {
   border-radius: 14px;
   padding: 14px;
   overflow-y: auto;
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
   box-shadow:
     inset 0 1px 0 var(--panel-sheen),
     inset 0 -40px 60px -40px rgba(0, 0, 0, 0.8),
     0 24px 60px rgba(0, 0, 0, 0.65);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.dashboard > aside:not(.job-notes-column):hover,
+.dashboard > main:hover {
+  transform: translateY(-3px);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  box-shadow:
+    inset 0 1px 0 var(--panel-sheen),
+    inset 0 -40px 60px -40px rgba(0, 0, 0, 0.8),
+    0 28px 70px rgba(0, 0, 0, 0.7),
+    0 0 24px rgba(var(--accent-rgb), 0.1);
 }
 
 .dashboard > aside.job-notes-column {
@@ -100,7 +92,7 @@ body::before {
   border: none;
   box-shadow: none;
   padding: 0;
-  overflow-y: hidden;
+  overflow-y: visible;
 }
 
 .job-notes-column__half {
@@ -114,10 +106,23 @@ body::before {
     var(--panel);
   border: 1px solid var(--panel-edge);
   border-radius: 14px;
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
   box-shadow:
     inset 0 1px 0 var(--panel-sheen),
     inset 0 -40px 60px -40px rgba(0, 0, 0, 0.8),
     0 24px 60px rgba(0, 0, 0, 0.65);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.job-notes-column__half:hover {
+  transform: translateY(-3px);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  box-shadow:
+    inset 0 1px 0 var(--panel-sheen),
+    inset 0 -40px 60px -40px rgba(0, 0, 0, 0.8),
+    0 28px 70px rgba(0, 0, 0, 0.7),
+    0 0 24px rgba(var(--accent-rgb), 0.1);
 }
 
 /* The Notes half fills with a single widget that pins its own form to
@@ -168,6 +173,16 @@ body::before {
   border: 1px solid var(--panel-edge);
   border-radius: 12px;
   box-shadow: inset 0 1px 0 rgba(255, 250, 240, 0.05);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.widget-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 240, 0.05),
+    0 8px 20px rgba(0, 0, 0, 0.5),
+    0 0 16px rgba(var(--accent-rgb), 0.1);
 }
 
 .widget-card:last-child {
@@ -408,11 +423,83 @@ body::before {
   height: 100%;
 }
 
-.chat-status-row {
+.chat-header {
   display: flex;
-  align-items: baseline;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 12px;
+  margin-bottom: 8px;
+}
+
+.chat-avatar-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.chat-avatar-ring {
+  display: inline-flex;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  padding: 6px;
+}
+
+.briefing-widget {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 320px;
+  margin-left: auto;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--panel-edge);
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+.briefing-widget h3 {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.briefing-widget__empty,
+.briefing-widget__error {
+  margin: 0;
+  color: var(--muted);
+}
+
+.briefing-widget__error {
+  color: var(--status-bad);
+}
+
+.briefing-widget__text {
+  color: var(--text);
+}
+
+.briefing-widget__text p:first-child {
+  margin-top: 0;
+}
+
+.briefing-widget__text p:last-child {
+  margin-bottom: 0;
+}
+
+.briefing-widget__time {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.chat-footer-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
   margin-bottom: 8px;
 }
 
@@ -458,6 +545,55 @@ body::before {
   color: var(--muted);
   opacity: 0.5;
   cursor: default;
+}
+
+.stock-widget__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.stock-widget__refresh {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.stock-widget__refresh:hover {
+  color: var(--accent);
+}
+
+.stock-widget__refresh:disabled {
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.stock-widget__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.stock-widget__symbol {
+  font-weight: 600;
+  flex: 1;
+}
+
+.stock-widget__price {
+  color: var(--muted);
+}
+
+.stock-widget__change--up {
+  color: var(--status-good);
+}
+
+.stock-widget__change--down {
+  color: var(--status-bad);
 }
 
 .chat-messages {

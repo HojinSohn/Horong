@@ -1,14 +1,29 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as chatSocket from '../hooks/useChatSocket'
+import * as briefingApi from '../lib/briefingApi'
 import * as openrouterApi from '../lib/openrouterApi'
 import { ChatPanel } from './ChatPanel'
 
 describe('ChatPanel', () => {
   beforeEach(() => {
-    // ChatPanel renders OpenRouterUsageBar next to the connection status;
-    // never-resolving keeps it harmlessly blank for tests that don't care.
+    // ChatPanel renders the OpenRouter usage bar and the Briefing widget
+    // independently of chat state; never-resolving keeps them harmlessly
+    // blank for tests that don't care about either.
     vi.spyOn(openrouterApi, 'fetchOpenRouterUsage').mockReturnValue(new Promise(() => {}))
+    vi.spyOn(briefingApi, 'fetchLatestBriefing').mockReturnValue(new Promise(() => {}))
+  })
+
+  it('renders the Briefing widget', () => {
+    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+      messages: [],
+      connectionState: 'open',
+      pending: false,
+      sendPrompt: vi.fn(),
+    })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    expect(screen.getByText('Daily Briefing')).toBeInTheDocument()
   })
 
   it('sends the draft on submit and clears the input', () => {
