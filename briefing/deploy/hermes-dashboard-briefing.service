@@ -1,0 +1,16 @@
+[Unit]
+Description=Horong custom-dashboard Daily Briefing MCP + REST service
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+WorkingDirectory=/root/hermes-dashboard-briefing
+ExecStart=/root/hermes-dashboard-briefing/venv/bin/python -m briefing_service.main
+Restart=on-failure
+RestartSec=2
+Environment=BRIEFING_HOST=100.109.58.59
+Environment=BRIEFING_PORT=8768
+Environment=BRIEFING_DB_PATH=/root/hermes-dashboard-briefing/briefing.db
+
+[Install]
+WantedBy=default.target
