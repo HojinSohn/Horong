@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   filterToLatestPeriod,
   groupSpendingByCategory,
   groupSpendingByPeriod,
+  latestPeriodLabel,
   totalIncome,
   totalSpending,
 } from './spending'
@@ -116,6 +117,22 @@ describe('groupSpendingByPeriod', () => {
     expect(result).toEqual([
       { label: 'Jul 2026', total: 20 },
       { label: 'Aug 2026', total: 150 },
+    ])
+  })
+
+  it('sums spend per day, sorted chronologically, with a short date label', () => {
+    const result = groupSpendingByPeriod(
+      [
+        txn({ date: '2026-08-10', amount: 30 }),
+        txn({ date: '2026-08-10', amount: 20 }),
+        txn({ date: '2026-08-03', amount: 15 }),
+      ],
+      'day',
+    )
+
+    expect(result).toEqual([
+      { label: 'Aug 3', total: 15 },
+      { label: 'Aug 10', total: 50 },
     ])
   })
 
@@ -244,6 +261,34 @@ describe('totalSpending', () => {
   })
 })
 
+describe('latestPeriodLabel', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-05T12:00:00Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('labels the real calendar today for "day", even when no transaction is dated today', () => {
+    const result = latestPeriodLabel(
+      [txn({ date: '2026-09-03', amount: 10 }), txn({ date: '2026-09-01', amount: 5 })],
+      'day',
+    )
+
+    expect(result).toBe('Sep 5')
+  })
+
+  it('returns the real calendar today for "day" even with no transactions', () => {
+    expect(latestPeriodLabel([], 'day')).toBe('Sep 5')
+  })
+
+  it('returns null for no transactions in "month"', () => {
+    expect(latestPeriodLabel([], 'month')).toBeNull()
+  })
+})
+
 describe('filterToLatestPeriod', () => {
   it('keeps only transactions in the most recent month', () => {
     const august = txn({ id: 'aug', date: '2026-08-15', amount: 10 })
@@ -275,5 +320,19 @@ describe('filterToLatestPeriod', () => {
 
   it('returns an empty array for no transactions', () => {
     expect(filterToLatestPeriod([], 'month')).toEqual([])
+  })
+
+  it('for "day", keeps only transactions dated the real calendar today, not the latest date with data', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-05T12:00:00Z'))
+    try {
+      const today = txn({ id: 'today', date: '2026-09-05', amount: 10 })
+      const staleLatest = txn({ id: 'stale', date: '2026-09-03', amount: 5 })
+
+      expect(filterToLatestPeriod([staleLatest, today], 'day')).toEqual([today])
+      expect(filterToLatestPeriod([staleLatest], 'day')).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

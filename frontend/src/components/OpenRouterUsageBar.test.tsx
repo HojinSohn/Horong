@@ -6,6 +6,7 @@ import { OpenRouterUsageBar } from './OpenRouterUsageBar'
 describe('OpenRouterUsageBar', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.spyOn(openrouterApi, 'fetchCurrentModel').mockReturnValue(new Promise(() => {}))
   })
 
   it('shows remaining balance and weekly usage', async () => {
@@ -84,5 +85,27 @@ describe('OpenRouterUsageBar', () => {
 
     expect(await screen.findByText(/\$28\.50 remaining/)).toBeInTheDocument()
     expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the current model once loaded', async () => {
+    vi.spyOn(openrouterApi, 'fetchOpenRouterUsage').mockReturnValue(new Promise(() => {}))
+    vi.spyOn(openrouterApi, 'fetchCurrentModel').mockResolvedValue({
+      model: 'deepseek/deepseek-v4.1-flash',
+      provider: 'openrouter',
+    })
+
+    render(<OpenRouterUsageBar />)
+
+    expect(await screen.findByText('deepseek/deepseek-v4.1-flash')).toBeInTheDocument()
+  })
+
+  it('silently omits the model label when the model fetch fails', async () => {
+    vi.spyOn(openrouterApi, 'fetchOpenRouterUsage').mockReturnValue(new Promise(() => {}))
+    vi.spyOn(openrouterApi, 'fetchCurrentModel').mockRejectedValue(new Error('network down'))
+
+    render(<OpenRouterUsageBar />)
+    await screen.findByText('OpenRouter')
+
+    expect(screen.queryByText(/deepseek/)).not.toBeInTheDocument()
   })
 })

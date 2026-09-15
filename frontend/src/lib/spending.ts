@@ -48,7 +48,7 @@ export function groupSpendingByCategory(transactions: Transaction[]): CategoryTo
   return [...head, { category: 'Other', total: otherTotal }]
 }
 
-export type Period = 'week' | 'month'
+export type Period = 'day' | 'week' | 'month'
 
 export interface PeriodTotal {
   label: string
@@ -56,7 +56,7 @@ export interface PeriodTotal {
 }
 
 const monthLabelFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
-const weekLabelFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+const dayLabelFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 function startOfWeekUTC(date: Date): string {
   const day = date.getUTCDay() // 0 = Sunday
@@ -66,14 +66,19 @@ function startOfWeekUTC(date: Date): string {
   return start.toISOString().slice(0, 10)
 }
 
+function todayKeyUTC(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
 function periodKey(isoDate: string, period: Period): string {
   if (period === 'month') return isoDate.slice(0, 7)
+  if (period === 'day') return isoDate
   return startOfWeekUTC(new Date(`${isoDate}T00:00:00Z`))
 }
 
 function periodLabel(key: string, period: Period): string {
   const asDate = new Date(`${period === 'month' ? `${key}-01` : key}T00:00:00Z`)
-  return period === 'month' ? monthLabelFormatter.format(asDate) : weekLabelFormatter.format(asDate)
+  return period === 'month' ? monthLabelFormatter.format(asDate) : dayLabelFormatter.format(asDate)
 }
 
 export function groupSpendingByPeriod(transactions: Transaction[], period: Period): PeriodTotal[] {
@@ -90,14 +95,30 @@ export function groupSpendingByPeriod(transactions: Transaction[], period: Perio
     .map(([key, total]) => ({ label: periodLabel(key, period), total }))
 }
 
-// Keeps every transaction (spend and credits alike) that falls in the most
-// recent week/month present in the data — "most recent we have data for",
-// not "the real calendar's current week," so it stays correct against
-// Sandbox test data that isn't necessarily dated near today.
+// The label for whichever period filterToLatestPeriod actually picked. For
+// 'day' this is the real calendar today (a "Daily" stat means today, even if
+// no transactions have posted yet); week/month still fall back to the latest
+// period present in the data, since Sandbox test data isn't necessarily dated
+// near today.
+export function latestPeriodLabel(transactions: Transaction[], period: Period): string | null {
+  if (period === 'day') return periodLabel(todayKeyUTC(), 'day')
+  if (transactions.length === 0) return null
+  const keys = transactions.map((txn) => periodKey(txn.date, period))
+  const latestKey = keys.reduce((max, key) => (key > max ? key : max))
+  return periodLabel(latestKey, period)
+}
+
+// Keeps every transaction (spend and credits alike) that falls in the target
+// period. For 'day' that's the real calendar today, so a day with no posted
+// transactions correctly totals to zero rather than showing stale data from
+// the last day something happened. For week/month it's the most recent
+// week/month present in the data — "most recent we have data for", not "the
+// real calendar's current week," so it stays correct against Sandbox test
+// data that isn't necessarily dated near today.
 export function filterToLatestPeriod(transactions: Transaction[], period: Period): Transaction[] {
   if (transactions.length === 0) return []
   const keys = transactions.map((txn) => periodKey(txn.date, period))
-  const latestKey = keys.reduce((max, key) => (key > max ? key : max))
+  const latestKey = period === 'day' ? todayKeyUTC() : keys.reduce((max, key) => (key > max ? key : max))
   return transactions.filter((_txn, index) => keys[index] === latestKey)
 }
 

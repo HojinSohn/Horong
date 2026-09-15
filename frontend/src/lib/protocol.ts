@@ -1,4 +1,4 @@
-export type ClientToBridge = { type: 'prompt'; text: string }
+export type ClientToBridge = { type: 'prompt'; text: string } | { type: 'cancel' }
 
 export type BridgeToClient =
   | { type: 'chunk'; text: string }

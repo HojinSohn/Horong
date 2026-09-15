@@ -18,7 +18,7 @@ function statusText(connectionState: ConnectionState) {
 }
 
 export function ChatPanel({ wsUrl, onTurnComplete }: ChatPanelProps) {
-  const { messages, connectionState, pending, sendPrompt } = useChatSocket(wsUrl, onTurnComplete)
+  const { messages, connectionState, pending, sendPrompt, cancel } = useChatSocket(wsUrl, onTurnComplete)
   const [draft, setDraft] = useState('')
 
   const submit = (event: FormEvent) => {
@@ -71,7 +71,14 @@ export function ChatPanel({ wsUrl, onTurnComplete }: ChatPanelProps) {
             </li>
           )
         })}
-        {pending && <li className="chat-message chat-message--assistant chat-message--pending">Horong is thinking…</li>}
+        {pending && (
+          <li className="chat-message chat-message--assistant chat-message--pending">
+            Horong is thinking…
+            <button type="button" className="chat-stop" onClick={cancel}>
+              Stop
+            </button>
+          </li>
+        )}
       </ul>
       <div className="chat-footer-row">
         <OpenRouterUsageBar />

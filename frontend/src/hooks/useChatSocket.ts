@@ -117,5 +117,11 @@ export function useChatSocket(url: string, onTurnComplete?: () => void) {
     }
   }, [])
 
-  return { messages, connectionState, pending, sendPrompt }
+  const cancel = useCallback(() => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ type: 'cancel' }))
+    }
+  }, [])
+
+  return { messages, connectionState, pending, sendPrompt, cancel }
 }

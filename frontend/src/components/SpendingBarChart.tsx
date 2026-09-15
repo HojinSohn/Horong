@@ -20,7 +20,11 @@ export function SpendingBarChart({ transactions, period }: SpendingBarChartProps
         <CartesianGrid strokeDasharray="0" vertical={false} stroke="var(--border)" />
         <XAxis dataKey="label" tick={AXIS_TICK_STYLE} />
         <YAxis tick={AXIS_TICK_STYLE} width={40} />
-        <Tooltip formatter={(value) => currencyFormatter.format(Number(value))} />
+        <Tooltip
+          formatter={(value) => currencyFormatter.format(Number(value))}
+          contentStyle={{ background: 'var(--bg-lift)', border: '1px solid var(--border)', borderRadius: 6 }}
+          labelStyle={{ color: 'var(--text)' }}
+        />
         <Bar dataKey="total" fill="#c94b38" radius={[4, 4, 0, 0]} maxBarSize={24} isAnimationActive={false} />
       </BarChart>
     </div>

@@ -1,5 +1,7 @@
 """Minimal ACP agent used only by the bridge's own tests. Echoes the prompt
-text back as a single agent_message_chunk, then ends the turn."""
+text back as a single agent_message_chunk, then ends the turn. A prompt whose
+text is exactly "slow" instead blocks until `cancel` is called (or 5s pass),
+so tests can exercise cancellation without a real long-running turn."""
 from __future__ import annotations
 
 import asyncio
@@ -20,8 +22,18 @@ class FakeAgent:
     async def new_session(self, cwd: str, mcp_servers=None, **kwargs) -> NewSessionResponse:
         return NewSessionResponse(session_id="fake-session-1")
 
+    async def cancel(self, session_id: str, **kwargs) -> None:
+        self._holder["cancel_event"].set()
+
     async def prompt(self, prompt, session_id: str, message_id=None, **kwargs) -> PromptResponse:
         text = prompt[0].text if prompt else ""
+        if text == "slow":
+            cancel_event = self._holder["cancel_event"]
+            try:
+                await asyncio.wait_for(cancel_event.wait(), timeout=5)
+                return PromptResponse(stop_reason="cancelled")
+            except asyncio.TimeoutError:
+                return PromptResponse(stop_reason="end_turn")
         connection = self._holder["connection"]
         await connection.session_update(
             session_id=session_id,
@@ -44,7 +56,7 @@ class FakeAgent:
 
 async def main() -> None:
     reader, writer = await stdio_streams()
-    holder: dict = {}
+    holder: dict = {"cancel_event": asyncio.Event()}
     connection = AgentSideConnection(lambda _client: FakeAgent(holder), writer, reader)
     holder["connection"] = connection
     await asyncio.Event().wait()

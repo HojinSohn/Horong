@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import * as financeApi from './lib/financeApi'
@@ -22,6 +22,7 @@ describe('App', () => {
       usageMonthly: 0.63,
       isFreeTier: false,
     })
+    vi.spyOn(openrouterApi, 'fetchCurrentModel').mockReturnValue(new Promise(() => {}))
   })
 
   it('renders the three-column layout regions', () => {
@@ -34,12 +35,21 @@ describe('App', () => {
   it('renders mock widget titles in the side columns', () => {
     render(<App />)
     expect(screen.getByText('Job Tracking')).toBeInTheDocument()
-    expect(screen.getByText('Finance')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Finance' })).toBeInTheDocument()
   })
 
   it('renders the live Notes widget instead of the old mock', async () => {
     render(<App />)
     expect(await screen.findByText('Notes')).toBeInTheDocument()
     expect(screen.queryByText('Follow up with recruiter Friday')).not.toBeInTheDocument()
+  })
+
+  it('switches the mobile tab bar selection when a tab is clicked', () => {
+    const { container } = render(<App />)
+    expect(container.querySelector('.dashboard')).toHaveAttribute('data-mobile-tab', 'chat')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finance' }))
+
+    expect(container.querySelector('.dashboard')).toHaveAttribute('data-mobile-tab', 'finance')
   })
 })

@@ -27,7 +27,11 @@ export function SpendingPieChart({ transactions, period }: SpendingPieChartProps
             <Cell key={entry.category} fill={SERIES_COLORS[index % SERIES_COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(value) => currencyFormatter.format(Number(value))} />
+        <Tooltip
+          formatter={(value) => currencyFormatter.format(Number(value))}
+          contentStyle={{ background: 'var(--bg-lift)', border: '1px solid var(--border)', borderRadius: 6 }}
+          labelStyle={{ color: 'var(--text)' }}
+        />
         <Legend
           layout="vertical"
           position="right"

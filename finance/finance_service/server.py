@@ -9,27 +9,29 @@ from cryptography.fernet import InvalidToken
 from finance_service.plaid_client import ItemLoginRequiredError, PlaidClient
 from finance_service.storage import FinanceStorage
 
-ALLOWED_ORIGIN = "http://localhost:3000"
+ALLOWED_ORIGINS = {"http://localhost:3000", "http://horong.taila5421b.ts.net:8770"}
 CORS_METHODS = "POST, GET, OPTIONS"
 CORS_HEADERS = "Content-Type"
 
 
 @web.middleware
 async def origin_guard(request: web.Request, handler):
-    if request.headers.get("Origin") != ALLOWED_ORIGIN:
+    origin = request.headers.get("Origin")
+    if origin not in ALLOWED_ORIGINS:
         return web.json_response({"error": "forbidden origin"}, status=403)
     response = await handler(request)
     # Server-side origin check above is the real security boundary; this header
     # is what lets a browser (which enforces CORS itself) actually read the response.
-    response.headers["Access-Control-Allow-Origin"] = ALLOWED_ORIGIN
+    response.headers["Access-Control-Allow-Origin"] = origin
     return response
 
 
 async def _cors_preflight(request: web.Request) -> web.Response:
+    origin = request.headers.get("Origin", "")
     return web.Response(
         status=204,
         headers={
-            "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+            "Access-Control-Allow-Origin": origin if origin in ALLOWED_ORIGINS else "",
             "Access-Control-Allow-Methods": CORS_METHODS,
             "Access-Control-Allow-Headers": CORS_HEADERS,
         },

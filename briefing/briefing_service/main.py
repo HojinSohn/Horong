@@ -13,7 +13,7 @@ def main() -> None:
     storage = connect(os.environ.get("BRIEFING_DB_PATH", "/root/hermes-dashboard-briefing/briefing.db"))
     app = build_app(storage)
     host = os.environ.get("BRIEFING_HOST", "100.109.58.59")
-    port = int(os.environ.get("BRIEFING_PORT", "8768"))
+    port = int(os.environ.get("BRIEFING_PORT", "8771"))
     uvicorn.run(app, host=host, port=port)
 
 

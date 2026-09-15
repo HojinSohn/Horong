@@ -11,6 +11,7 @@ describe('ChatPanel', () => {
     // independently of chat state; never-resolving keeps them harmlessly
     // blank for tests that don't care about either.
     vi.spyOn(openrouterApi, 'fetchOpenRouterUsage').mockReturnValue(new Promise(() => {}))
+    vi.spyOn(openrouterApi, 'fetchCurrentModel').mockReturnValue(new Promise(() => {}))
     vi.spyOn(briefingApi, 'fetchLatestBriefing').mockReturnValue(new Promise(() => {}))
   })
 
@@ -20,6 +21,7 @@ describe('ChatPanel', () => {
       connectionState: 'open',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -33,6 +35,7 @@ describe('ChatPanel', () => {
       connectionState: 'open',
       pending: false,
       sendPrompt,
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -53,6 +56,7 @@ describe('ChatPanel', () => {
       connectionState: 'open',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -66,6 +70,7 @@ describe('ChatPanel', () => {
       connectionState: 'connecting',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -78,6 +83,7 @@ describe('ChatPanel', () => {
       connectionState: 'closed',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -90,10 +96,39 @@ describe('ChatPanel', () => {
       connectionState: 'open',
       pending: true,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     expect(screen.getByText('Horong is thinking…')).toBeInTheDocument()
+  })
+
+  it('shows a Stop button while pending, calls cancel when clicked, and hides once not pending', () => {
+    const cancel = vi.fn()
+    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+      messages: [{ role: 'user', text: 'hi', streaming: false }],
+      connectionState: 'open',
+      pending: true,
+      sendPrompt: vi.fn(),
+      cancel,
+    })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+    expect(cancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not show a Stop button when not pending', () => {
+    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+      messages: [],
+      connectionState: 'open',
+      pending: false,
+      sendPrompt: vi.fn(),
+      cancel: vi.fn(),
+    })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    expect(screen.queryByRole('button', { name: 'Stop' })).not.toBeInTheDocument()
   })
 
   it('renders a thought entry as a collapsible summary with the full text inside', () => {
@@ -102,6 +137,7 @@ describe('ChatPanel', () => {
       connectionState: 'open',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -115,6 +151,7 @@ describe('ChatPanel', () => {
       connectionState: 'open',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -127,6 +164,7 @@ describe('ChatPanel', () => {
       connectionState: 'open',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -146,6 +184,7 @@ describe('ChatPanel', () => {
       connectionState: 'open',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -159,6 +198,7 @@ describe('ChatPanel', () => {
       connectionState: 'open',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -174,6 +214,7 @@ describe('ChatPanel', () => {
       connectionState: 'closed',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -186,6 +227,7 @@ describe('ChatPanel', () => {
       connectionState: 'open',
       pending: false,
       sendPrompt: vi.fn(),
+      cancel: vi.fn(),
     })
 
     const { container } = render(<ChatPanel wsUrl="ws://bridge.test/ws" />)

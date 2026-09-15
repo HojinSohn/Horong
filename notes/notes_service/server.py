@@ -11,7 +11,7 @@ from starlette.responses import JSONResponse, Response
 
 from notes_service.storage import Note, NotesStorage
 
-ALLOWED_ORIGIN = "http://localhost:3000"
+ALLOWED_ORIGINS = {"http://localhost:3000", "http://horong.taila5421b.ts.net:8770"}
 ALLOWED_HOST = "100.109.58.59:8767"
 
 
@@ -21,11 +21,12 @@ class _OriginGuard(BaseHTTPMiddleware):
     no browser Origin header) and must never be blocked by this."""
 
     async def dispatch(self, request: Request, call_next) -> Response:
-        if request.url.path.startswith("/notes") and request.headers.get("origin") != ALLOWED_ORIGIN:
+        origin = request.headers.get("origin")
+        if request.url.path.startswith("/notes") and origin not in ALLOWED_ORIGINS:
             return JSONResponse({"error": "forbidden origin"}, status_code=403)
         response = await call_next(request)
         if request.url.path.startswith("/notes"):
-            response.headers["Access-Control-Allow-Origin"] = ALLOWED_ORIGIN
+            response.headers["Access-Control-Allow-Origin"] = origin
         return response
 
 

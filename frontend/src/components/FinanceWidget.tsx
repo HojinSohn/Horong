@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePlaidLink } from 'react-plaid-link'
 import { exchangePublicToken, fetchLinkToken, fetchTransactions, type Transaction } from '../lib/financeApi'
-import { currencyFormatter, totalIncome, totalSpending, type Period } from '../lib/spending'
+import { currencyFormatter, latestPeriodLabel, totalIncome, totalSpending, type Period } from '../lib/spending'
 import { SpendingBarChart } from './SpendingBarChart'
 import { SpendingPieChart } from './SpendingPieChart'
 
@@ -80,6 +80,9 @@ export function FinanceWidget() {
       {linked && transactions.length > 0 && (
         <>
           <div className="finance-period-toggle" role="group" aria-label="Chart period">
+            <button type="button" className={period === 'day' ? 'active' : undefined} onClick={() => setPeriod('day')}>
+              Daily
+            </button>
             <button type="button" className={period === 'week' ? 'active' : undefined} onClick={() => setPeriod('week')}>
               Weekly
             </button>
@@ -92,11 +95,11 @@ export function FinanceWidget() {
             </button>
           </div>
           <p className="finance-income-stat">
-            Income ({period === 'week' ? 'this week' : 'this month'}):{' '}
+            Income ({period === 'day' ? latestPeriodLabel(transactions, period) : period === 'week' ? 'this week' : 'this month'}):{' '}
             <strong>{currencyFormatter.format(totalIncome(transactions, period))}</strong>
           </p>
           <p className="finance-spending-stat">
-            Spending ({period === 'week' ? 'this week' : 'this month'}):{' '}
+            Spending ({period === 'day' ? latestPeriodLabel(transactions, period) : period === 'week' ? 'this week' : 'this month'}):{' '}
             <strong>{currencyFormatter.format(totalSpending(transactions, period))}</strong>
           </p>
           <SpendingPieChart transactions={transactions} period={period} />

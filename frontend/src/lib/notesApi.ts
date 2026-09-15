@@ -1,4 +1,4 @@
-const NOTES_BASE_URL = import.meta.env.VITE_NOTES_BASE_URL ?? 'http://100.109.58.59:8767'
+const NOTES_BASE_URL = import.meta.env.VITE_NOTES_BASE_URL ?? 'http://horong.taila5421b.ts.net:8767'
 
 export interface Note {
   id: number

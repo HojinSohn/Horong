@@ -14,6 +14,7 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
 export function BriefingWidget() {
   const [briefing, setBriefing] = useState<Briefing | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -32,8 +33,19 @@ export function BriefingWidget() {
   }, [load])
 
   return (
-    <div className="briefing-widget">
-      <h3>Daily Briefing</h3>
+    <div className={`briefing-widget${expanded ? ' briefing-widget--expanded' : ''}`}>
+      <div className="briefing-widget__header">
+        <h3>Daily Briefing</h3>
+        <button
+          type="button"
+          className="briefing-widget__toggle"
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Collapse daily briefing' : 'Expand daily briefing'}
+          onClick={() => setExpanded((e) => !e)}
+        >
+          {expanded ? '−' : '+'}
+        </button>
+      </div>
       {error && <p className="briefing-widget__error">{error}</p>}
       {!error && !briefing && <p className="briefing-widget__empty">No briefing yet.</p>}
       {!error && briefing && (() => {

@@ -35,3 +35,18 @@ async def test_send_prompt_streams_chunk_then_done(tmp_path):
         {"type": "chunk", "text": "echo: hello"},
         {"type": "done"},
     ]
+
+
+@pytest.mark.asyncio
+async def test_cancel_stops_an_in_flight_prompt_promptly(tmp_path):
+    async with open_session(FIXTURE, str(tmp_path)) as session:
+        prompt_task = asyncio.create_task(session.send_prompt("slow"))
+        await asyncio.sleep(0.2)  # let the prompt actually reach the fake agent
+        assert not prompt_task.done()
+
+        await session.cancel()
+        await asyncio.wait_for(prompt_task, timeout=2)
+
+        # send_prompt's own "done" marker, put after the (now-cancelled) prompt() call returns.
+        update = await asyncio.wait_for(session.updates.get(), timeout=2)
+        assert update == {"type": "done"}

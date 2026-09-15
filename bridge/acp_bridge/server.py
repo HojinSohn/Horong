@@ -25,16 +25,35 @@ async def handle_connection(
                 update = await session.updates.get()
                 await ws.send(json.dumps(update))
 
+        # Prompts run one at a time, in the order sent (a queue, not
+        # concurrent tasks) — same behavior as before. What changes is that
+        # the read loop below no longer blocks on a prompt's completion, so
+        # a "cancel" message sent mid-turn reaches session.cancel()
+        # immediately instead of sitting behind the current await.
+        prompt_queue: "asyncio.Queue[str]" = asyncio.Queue()
+
+        async def process_prompts() -> None:
+            while True:
+                text = await prompt_queue.get()
+                await session.send_prompt(text)
+
         forwarder = asyncio.create_task(forward_updates())
+        worker = asyncio.create_task(process_prompts())
         try:
             async for raw in ws:
                 message = json.loads(raw)
-                if message.get("type") == "prompt":
-                    await session.send_prompt(message["text"])
+                msg_type = message.get("type")
+                if msg_type == "prompt":
+                    await prompt_queue.put(message["text"])
+                elif msg_type == "cancel":
+                    await session.cancel()
         finally:
             forwarder.cancel()
+            worker.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await forwarder
+            with contextlib.suppress(asyncio.CancelledError):
+                await worker
 
 
 def build_handler(hermes_cmd: Sequence[str], workspace_dir: str, notes_mcp_url: str | None = None):
@@ -54,7 +73,10 @@ async def run_server(
     # this, any page reachable on the tailnet could open a WebSocket here and
     # drive Horong with auto-approved tool execution as root.
     async with serve(
-        build_handler(hermes_cmd, workspace_dir, notes_mcp_url), host, port, origins=["http://localhost:3000"]
+        build_handler(hermes_cmd, workspace_dir, notes_mcp_url),
+        host,
+        port,
+        origins=["http://localhost:3000", "http://horong.taila5421b.ts.net:8770"],
     ):
         logger.info("bridge listening on %s:%s", host, port)
         await asyncio.Future()  # run forever

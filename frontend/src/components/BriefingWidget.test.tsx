@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as briefingApi from '../lib/briefingApi'
 import { BriefingWidget } from './BriefingWidget'
@@ -7,6 +7,30 @@ describe('BriefingWidget', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.useRealTimers()
+  })
+
+  it('starts collapsed with a small expand toggle', async () => {
+    vi.spyOn(briefingApi, 'fetchLatestBriefing').mockResolvedValue(null)
+
+    const { container } = render(<BriefingWidget />)
+    await act(async () => {})
+
+    expect(container.querySelector('.briefing-widget--expanded')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Expand daily briefing' })).toBeInTheDocument()
+  })
+
+  it('expands to a taller view when the toggle is clicked, and collapses back', async () => {
+    vi.spyOn(briefingApi, 'fetchLatestBriefing').mockResolvedValue(null)
+
+    const { container } = render(<BriefingWidget />)
+    await act(async () => {})
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand daily briefing' }))
+    expect(container.querySelector('.briefing-widget--expanded')).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'Collapse daily briefing' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse daily briefing' }))
+    expect(container.querySelector('.briefing-widget--expanded')).toBeNull()
   })
 
   it('shows an empty state when no briefing has been saved yet', async () => {

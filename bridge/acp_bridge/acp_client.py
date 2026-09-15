@@ -133,6 +133,12 @@ class HorongSession:
             await asyncio.sleep(0)
         await self.updates.put({"type": "done"})
 
+    async def cancel(self) -> None:
+        # session/cancel is a fire-and-forget notification (not a request), so
+        # this returns immediately regardless of whether a prompt() call is
+        # currently in flight on the same session.
+        await self._connection.cancel(session_id=self.session_id)
+
 
 def _build_mcp_servers(notes_mcp_url: str | None) -> list[HttpMcpServer]:
     if not notes_mcp_url:

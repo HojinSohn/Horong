@@ -1,4 +1,4 @@
-const FINANCE_BASE_URL = import.meta.env.VITE_FINANCE_BASE_URL ?? 'http://100.109.58.59:8766'
+const FINANCE_BASE_URL = import.meta.env.VITE_FINANCE_BASE_URL ?? 'http://horong.taila5421b.ts.net:8766'
 
 export interface Transaction {
   id: string

@@ -1,4 +1,4 @@
-const BRIEFING_BASE_URL = import.meta.env.VITE_BRIEFING_BASE_URL ?? 'http://100.109.58.59:8768'
+const BRIEFING_BASE_URL = import.meta.env.VITE_BRIEFING_BASE_URL ?? 'http://horong.taila5421b.ts.net:8771'
 
 export interface Briefing {
   text: string

@@ -68,3 +68,23 @@ async def test_options_preflight_returns_cors_headers():
         assert resp.status in (200, 204)
         assert resp.headers["Access-Control-Allow-Origin"] == "http://localhost:3000"
         assert "GET" in resp.headers["Access-Control-Allow-Methods"]
+
+
+@pytest.mark.asyncio
+async def test_model_route_returns_default_model_and_provider(tmp_path):
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("model:\n  default: deepseek/deepseek-v4.1-flash\n  provider: openrouter\n")
+    app = build_app(FakeOpenRouterClient(), config_path=str(config_path))
+    async with TestClient(TestServer(app)) as client:
+        resp = await client.get("/model", headers=ORIGIN)
+        assert resp.status == 200
+        assert await resp.json() == {"model": "deepseek/deepseek-v4.1-flash", "provider": "openrouter"}
+
+
+@pytest.mark.asyncio
+async def test_model_route_returns_502_when_config_file_is_missing(tmp_path):
+    app = build_app(FakeOpenRouterClient(), config_path=str(tmp_path / "does-not-exist.yaml"))
+    async with TestClient(TestServer(app)) as client:
+        resp = await client.get("/model", headers=ORIGIN)
+        assert resp.status == 502
+        assert "error" in await resp.json()

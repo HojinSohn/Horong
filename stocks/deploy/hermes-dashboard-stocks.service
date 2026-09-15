@@ -1,0 +1,17 @@
+[Unit]
+Description=Horong custom-dashboard stock ticker/quotes service
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+WorkingDirectory=/root/hermes-dashboard-stocks
+ExecStart=/root/hermes-dashboard-stocks/venv/bin/python -m stocks_service.main
+Restart=on-failure
+RestartSec=2
+EnvironmentFile=/root/hermes-dashboard-stocks/stocks.env
+Environment=STOCKS_HOST=100.109.58.59
+Environment=STOCKS_PORT=8769
+Environment=STOCKS_DB_PATH=/root/hermes-dashboard-stocks/stocks.db
+
+[Install]
+WantedBy=default.target

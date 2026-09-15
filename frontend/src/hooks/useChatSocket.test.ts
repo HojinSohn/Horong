@@ -276,6 +276,40 @@ describe('useChatSocket', () => {
     }).not.toThrow()
   })
 
+  it('sends a cancel frame', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    act(() => {
+      result.current.sendPrompt('hello')
+    })
+    act(() => {
+      result.current.cancel()
+    })
+
+    expect(socket.sent).toEqual([
+      JSON.stringify({ type: 'prompt', text: 'hello' }),
+      JSON.stringify({ type: 'cancel' }),
+    ])
+  })
+
+  it('clears pending once the done that follows a cancel arrives', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    act(() => {
+      result.current.sendPrompt('hello')
+    })
+    expect(result.current.pending).toBe(true)
+
+    act(() => {
+      result.current.cancel()
+      socket.emitMessage({ type: 'done' })
+    })
+
+    expect(result.current.pending).toBe(false)
+  })
+
   it('reports connectionState as connecting, then open, then closed', () => {
     const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
     const socket = FakeWebSocket.instances[0]

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" role="img" aria-label="Horong">
+  <defs>
+    <radialGradient id="favicon-fur" cx="32%" cy="28%" r="78%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="55%" stop-color="#f6f6f6" />
+      <stop offset="100%" stop-color="#d8d8d8" />
+    </radialGradient>
+  </defs>
+  <g transform="translate(150 150) scale(1.7) translate(-150 -150)">
+    <circle cx="150" cy="145" r="70" fill="url(#favicon-fur)" />
+    <ellipse cx="125" cy="135" rx="12" ry="13" fill="#181412" />
+    <circle cx="125" cy="136" r="4.6" fill="#0d0b0a" />
+    <circle cx="129.5" cy="130.5" r="3.4" fill="#ffffff" />
+    <circle cx="120.5" cy="140" r="1.6" fill="#ffffff" opacity="0.5" />
+    <ellipse cx="175" cy="135" rx="12" ry="13" fill="#181412" />
+    <circle cx="175" cy="136" r="4.6" fill="#0d0b0a" />
+    <circle cx="179.5" cy="130.5" r="3.4" fill="#ffffff" />
+    <circle cx="170.5" cy="140" r="1.6" fill="#ffffff" opacity="0.5" />
+    <ellipse cx="150" cy="155" rx="8" ry="6" fill="#181412" />
+    <ellipse cx="153" cy="152" rx="2.4" ry="1.6" fill="#ffffff" opacity="0.7" />
+    <path d="M 150 161 V 168" stroke="#181412" stroke-width="2" stroke-linecap="round" fill="none" />
+    <path d="M 150 168 Q 140 176 132 170" stroke="#181412" stroke-width="2.2" fill="none" stroke-linecap="round" />
+    <path d="M 150 168 Q 160 176 168 170" stroke="#181412" stroke-width="2.2" fill="none" stroke-linecap="round" />
+  </g>
+</svg>
