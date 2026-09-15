@@ -56,9 +56,19 @@ export function StockWidget() {
     <div className="widget-card stock-widget">
       <div className="stock-widget__header">
         <h2>Stocks</h2>
-        <button type="button" className="stock-widget__refresh" onClick={load} disabled={loading} aria-label="Refresh stock prices">
-          ↻
-        </button>
+        <div className="stock-widget__header-actions">
+          <a
+            className="portfolio-link"
+            href="https://digital.fidelity.com/ftgw/digital/portfolio/summary"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Portfolio ↗
+          </a>
+          <button type="button" className="stock-widget__refresh" onClick={load} disabled={loading} aria-label="Refresh stock prices">
+            ↻
+          </button>
+        </div>
       </div>
       {error && <p className="notes-error">{error}</p>}
       <ul className="stock-widget__list">

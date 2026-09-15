@@ -15,11 +15,11 @@
   --text: #f9f6f0;
   --muted: #98907f;
 
-  --accent: #d4b881;
-  --accent-rgb: 212, 184, 129;
-  --accent-secondary: #f0e4d3;
+  --accent: #b8b8b8;
+  --accent-rgb: 184, 184, 184;
+  --accent-secondary: #e8e8e8;
 
-  --border: rgba(212, 184, 129, 0.12);
+  --border: rgba(184, 184, 184, 0.12);
   --status-good: #63b37b;
   --status-bad: #e27d72;
 
@@ -198,6 +198,38 @@ body {
     inset 0 1px 0 rgba(255, 250, 240, 0.05),
     0 8px 20px rgba(0, 0, 0, 0.5),
     0 0 16px rgba(var(--accent-rgb), 0.1);
+}
+
+/* Finance/Stocks each render a single .widget-card inside a
+   .finance-stocks-column__half that's already a full panel (background,
+   border, shadow) -- without this, they show as a redundant box-in-a-box. */
+.finance-stocks-column__half > .widget-card {
+  margin-bottom: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.finance-stocks-column__half > .widget-card:hover {
+  transform: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Same box-in-a-box as above, but Notes already sits in a half with
+   padding zeroed out (see .job-notes-column__half:last-child), so its
+   own padding still applies here -- only the redundant panel visuals go. */
+.notes-widget {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.notes-widget:hover {
+  transform: none;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .widget-card:last-child {
@@ -621,21 +653,33 @@ body {
   cursor: default;
 }
 
-.stock-widget__header,
-.finance-widget__header {
+.stock-widget__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
 }
 
-.finance-widget__portfolio-link {
+.stock-widget__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.portfolio-link {
+  display: inline-block;
   font-size: 0.75rem;
   color: var(--accent);
   text-decoration: none;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
-.finance-widget__portfolio-link:hover {
-  text-decoration: underline;
+.portfolio-link:hover {
+  color: var(--text);
+  border-color: rgba(var(--accent-rgb), 0.4);
+  background: rgba(var(--accent-rgb), 0.12);
 }
 
 .stock-widget__refresh {
@@ -699,7 +743,7 @@ body {
 }
 
 .chat-message--user {
-  background: linear-gradient(155deg, var(--accent-secondary), #d9c9b2);
+  background: linear-gradient(155deg, var(--accent-secondary), #c7c7c7);
   color: #0d0b09;
   margin-left: auto;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
