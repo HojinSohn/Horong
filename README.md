@@ -58,13 +58,10 @@ others or the chat bridge.
 | `frontend/` | React dashboard (chat panel, widgets) |
 | `bridge/` | WebSocket ⇄ ACP bridge into the Hermes agent process |
 | `finance/`, `stocks/`, `notes/`, `briefing/`, `openrouter/` | Independent backend services, one per widget |
-| `docs/superpowers/specs/` | Design docs written before each feature was built |
-| `docs/known-issues.md` | Open bugs and tradeoffs, with root-cause notes |
 
 ## Status
 
 Live and running; Discord chat and the dashboard's Finance/Stocks/Notes/
 Briefing/OpenRouter widgets are working end to end. Email as a second chat
 surface is implemented but disabled pending a fix for an upstream
-seen-tracking bug — see `docs/known-issues.md` for the full writeup,
-including a couple of debugging dead ends and how each was actually root-caused.
+seen-tracking bug in the underlying agent framework.
