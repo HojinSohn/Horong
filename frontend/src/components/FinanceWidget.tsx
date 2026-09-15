@@ -69,7 +69,17 @@ export function FinanceWidget() {
 
   return (
     <div className="widget-card">
-      <h2>Finance</h2>
+      <div className="finance-widget__header">
+        <h2>Finance</h2>
+        <a
+          className="finance-widget__portfolio-link"
+          href="https://digital.fidelity.com/ftgw/digital/portfolio/summary"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Portfolio ↗
+        </a>
+      </div>
       {(!linked || needsReauth) && (
         <button type="button" onClick={() => open()} disabled={!ready}>
           Connect your bank

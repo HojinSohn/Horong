@@ -621,10 +621,21 @@ body {
   cursor: default;
 }
 
-.stock-widget__header {
+.stock-widget__header,
+.finance-widget__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+}
+
+.finance-widget__portfolio-link {
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.finance-widget__portfolio-link:hover {
+  text-decoration: underline;
 }
 
 .stock-widget__refresh {
