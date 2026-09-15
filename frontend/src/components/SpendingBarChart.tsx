@@ -16,7 +16,7 @@ export function SpendingBarChart({ transactions, period }: SpendingBarChartProps
   return (
     <div className="finance-chart">
       <h3>Spending over time</h3>
-      <BarChart width={260} height={200} data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+      <BarChart width={260} height={130} data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="0" vertical={false} stroke="var(--border)" />
         <XAxis dataKey="label" tick={AXIS_TICK_STYLE} />
         <YAxis tick={AXIS_TICK_STYLE} width={40} />

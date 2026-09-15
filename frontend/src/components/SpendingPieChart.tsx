@@ -21,8 +21,8 @@ export function SpendingPieChart({ transactions, period }: SpendingPieChartProps
   return (
     <div className="finance-chart">
       <h3>Spending by category ({period === 'week' ? 'this week' : 'this month'})</h3>
-      <PieChart width={300} height={180}>
-        <Pie data={data} dataKey="total" nameKey="category" cx={90} cy={90} outerRadius={65} isAnimationActive={false}>
+      <PieChart width={260} height={130}>
+        <Pie data={data} dataKey="total" nameKey="category" cx={65} cy={65} outerRadius={45} isAnimationActive={false}>
           {data.map((entry, index) => (
             <Cell key={entry.category} fill={SERIES_COLORS[index % SERIES_COLORS.length]} />
           ))}
@@ -40,7 +40,7 @@ export function SpendingPieChart({ transactions, period }: SpendingPieChartProps
             const percent = entry ? Math.round((entry.total / grandTotal) * 100) : 0
             return `${value} — ${percent}%`
           }}
-          wrapperStyle={{ fontSize: 11, color: 'var(--muted)', width: 130 }}
+          wrapperStyle={{ fontSize: 11, color: 'var(--muted)', width: 110 }}
         />
       </PieChart>
     </div>

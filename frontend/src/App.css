@@ -49,6 +49,7 @@ body {
   z-index: 1;
   display: grid;
   grid-template-columns: 400px 1fr 400px;
+  grid-template-rows: 1fr;
   gap: 12px;
   height: 100vh;
   padding: 12px;
@@ -57,6 +58,7 @@ body {
 .dashboard > aside,
 .dashboard > main {
   position: relative;
+  min-height: 0;
   background:
     linear-gradient(160deg, rgba(255, 250, 240, 0.045) 0%, rgba(255, 250, 240, 0) 42%),
     var(--panel);
