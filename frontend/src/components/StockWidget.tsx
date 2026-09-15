@@ -61,7 +61,7 @@ export function StockWidget() {
         </button>
       </div>
       {error && <p className="notes-error">{error}</p>}
-      <ul>
+      <ul className="stock-widget__list">
         {quotes.map((quote) => (
           <li key={quote.symbol} className="stock-widget__row">
             <span className="stock-widget__symbol">{quote.symbol}</span>

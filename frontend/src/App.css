@@ -86,7 +86,8 @@ body {
     0 0 24px rgba(var(--accent-rgb), 0.1);
 }
 
-.dashboard > aside.job-notes-column {
+.dashboard > aside.job-notes-column,
+.dashboard > aside.finance-stocks-column {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -97,7 +98,8 @@ body {
   overflow-y: visible;
 }
 
-.job-notes-column__half {
+.job-notes-column__half,
+.finance-stocks-column__half {
   position: relative;
   flex: 1 1 0;
   min-height: 0;
@@ -117,7 +119,8 @@ body {
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.job-notes-column__half:hover {
+.job-notes-column__half:hover,
+.finance-stocks-column__half:hover {
   transform: translateY(-3px);
   border-color: rgba(var(--accent-rgb), 0.35);
   box-shadow:
@@ -125,6 +128,16 @@ body {
     inset 0 -40px 60px -40px rgba(0, 0, 0, 0.8),
     0 28px 70px rgba(0, 0, 0, 0.7),
     0 0 24px rgba(var(--accent-rgb), 0.1);
+}
+
+/* Finance (charts + transactions) needs more room than the Stocks
+   ticker list, unlike the even Job/Notes split. */
+.finance-stocks-column__half:first-child {
+  flex: 1.6 1 0;
+}
+
+.finance-stocks-column__half:last-child {
+  flex: 1 1 0;
 }
 
 /* The Notes half fills with a single widget that pins its own form to
@@ -282,7 +295,12 @@ body {
   list-style: none;
   margin: 8px 0 0;
   padding: 0;
-  max-height: 320px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.stock-widget__list {
+  max-height: 200px;
   overflow-y: auto;
 }
 

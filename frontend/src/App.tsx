@@ -24,9 +24,13 @@ export default function App() {
   return (
     <>
       <div className="dashboard" data-mobile-tab={mobileTab}>
-        <aside aria-label="Finance and stocks">
-          <FinanceWidget />
-          <StockWidget />
+        <aside aria-label="Finance and stocks" className="finance-stocks-column">
+          <div className="finance-stocks-column__half">
+            <FinanceWidget />
+          </div>
+          <div className="finance-stocks-column__half">
+            <StockWidget />
+          </div>
         </aside>
         <main aria-label="Horong chat column">
           <ChatPanel wsUrl={BRIDGE_WS_URL} onTurnComplete={() => setNotesRefreshKey((key) => key + 1)} />
