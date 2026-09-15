@@ -61,7 +61,8 @@ others or the chat bridge.
 
 ## Status
 
-Live and running; Discord chat and the dashboard's Finance/Stocks/Notes/
-Briefing/OpenRouter widgets are working end to end. Email as a second chat
-surface is implemented but disabled pending a fix for an upstream
-seen-tracking bug in the underlying agent framework.
+Live and running; Discord chat and the dashboard's Finance/Notes/Briefing/
+OpenRouter widgets are working end to end. Stocks is built and tested but
+not yet deployed to the VPS. Email as a second chat surface is implemented
+but disabled pending a fix for an upstream seen-tracking bug in the
+underlying agent framework.
