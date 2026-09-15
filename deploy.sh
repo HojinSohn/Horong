@@ -6,7 +6,7 @@
 set -euo pipefail
 
 HOST="root@horong.taila5421b.ts.net"
-SERVICES="finance notes bridge openrouter briefing"
+SERVICES="finance notes bridge openrouter briefing stocks"
 
 deploy_frontend() {
   echo "==> building frontend"
@@ -33,11 +33,11 @@ case "$target" in
     deploy_frontend
     for svc in $SERVICES; do deploy_service "$svc"; done
     ;;
-  finance|notes|bridge|openrouter|briefing)
+  finance|notes|bridge|openrouter|briefing|stocks)
     deploy_service "$target"
     ;;
   *)
-    echo "usage: $0 [frontend|all|finance|notes|bridge|openrouter|briefing]" >&2
+    echo "usage: $0 [frontend|all|finance|notes|bridge|openrouter|briefing|stocks]" >&2
     exit 1
     ;;
 esac
