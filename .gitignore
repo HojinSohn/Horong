@@ -20,6 +20,4 @@ venv/
 .idea/
 
 # Local tool state (not shared across clones)
-.impeccable/hook.cache.json
-.impeccable/hook.pending.json
-.impeccable/config.local.json
+.impeccable/
