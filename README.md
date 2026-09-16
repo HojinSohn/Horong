@@ -29,6 +29,9 @@ the same turn, with the new note landing in the Notes widget on the right.
 - **Daily briefing**: a scheduled summary widget.
 - **OpenRouter usage**: a live spend/credit bar for the model provider
   powering the agent.
+- **Discord notifications**: reminders and other proactive agent output
+  (e.g. the cron reminder in the screenshot above) are delivered to Discord,
+  so they reach you even when the dashboard tab isn't open.
 
 ## Architecture
 
@@ -42,10 +45,12 @@ flowchart LR
     Notes["notes (MCP tool)"]
     Briefing["briefing"]
     OpenRouter["openrouter"]
+    Discord["Discord"]
 
     FE -->|WebSocket chat| Bridge
     Bridge -->|spawns/talks to| Agent
     Agent -->|MCP tool call| Notes
+    Agent -->|reminders and notifications| Discord
 
     FE -->|REST| Finance
     FE -->|REST| Stocks
