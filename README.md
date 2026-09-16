@@ -5,6 +5,15 @@ A self-hosted personal dashboard and AI agent, built around [Hermes Agent](https
 Python microservices, one shared WebSocket bridge into the agent process,
 running natively on a VPS under `systemd --user`.
 
+## Screenshot
+
+![Dashboard screenshot: chat panel setting a reminder and adding a note, alongside Finance, Stocks, Job Search, and Notes widgets](docs/screenshot.png)
+
+The chat panel here shows the agent handling a real multi-tool request end to
+end — "remind me next Tuesday the project is due, and add a note about it" —
+visibly calling a `cron` tool for the reminder *and* the custom notes MCP tool
+in the same turn, with the new note landing in the Notes widget on the right.
+
 ## What it does
 
 - **Chat with the agent** over a persistent WebSocket connection into a
@@ -23,18 +32,39 @@ running natively on a VPS under `systemd --user`.
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    FE["React dashboard"]
+
+    subgraph agent_runtime["Agent runtime"]
+        Bridge["bridge"]
+        Agent["Hermes Agent (ACP)"]
+    end
+
+    subgraph services["Backend services (own process, DB, tests)"]
+        Finance["finance<br/>(Plaid)"]
+        Stocks["stocks<br/>(Finnhub)"]
+        Notes["notes<br/>(MCP tool)"]
+        Briefing["briefing"]
+        OpenRouter["openrouter"]
+    end
+
+    FE -- WebSocket chat --> Bridge
+    Bridge -- spawns/talks to --> Agent
+    Agent -- MCP tool call --> Notes
+
+    FE -- REST --> Finance
+    FE -- REST --> Stocks
+    FE -- REST --> Notes
+    FE -- REST --> Briefing
+    FE -- REST --> OpenRouter
 ```
-frontend (React + Vite)
-   │  WebSocket
-   ▼
-bridge  ──spawns/talks to──▶  hermes agent (ACP protocol)
-   │
-   ├── finance    (aiohttp, Plaid API, SQLite)
-   ├── stocks     (aiohttp, Finnhub API, SQLite)
-   ├── notes      (FastAPI/uvicorn, SQLite, exposed to the agent as an MCP tool)
-   ├── briefing   (FastAPI/uvicorn, SQLite)
-   └── openrouter (aiohttp, OpenRouter API)
-```
+
+The frontend talks to each widget's backend directly over REST for its own
+data; the bridge is only for the chat WebSocket into the agent process. The
+agent, in turn, can call back into the Notes service itself via MCP — the
+one path where the agent writes to the dashboard rather than the other way
+around (see the screenshot above).
 
 Each backend service is an independently deployable process (own
 `requirements.txt`, own `systemd` unit, own tests) rather than a shared
@@ -61,8 +91,7 @@ others or the chat bridge.
 
 ## Status
 
-Live and running; Discord chat and the dashboard's Finance/Notes/Briefing/
-OpenRouter widgets are working end to end. Stocks is built and tested but
-not yet deployed to the VPS. Email as a second chat surface is implemented
-but disabled pending a fix for an upstream seen-tracking bug in the
-underlying agent framework.
+Live and running; Discord chat and every dashboard widget (Finance, Stocks,
+Notes, Briefing, OpenRouter) are working end to end. Email as a second chat
+surface is implemented but disabled pending a fix for an upstream
+seen-tracking bug in the underlying agent framework.
