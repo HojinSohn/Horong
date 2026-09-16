@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { addNote, deleteNote, fetchNotes, updateNote, type Note } from '../lib/notesApi'
 
 interface NotesWidgetProps {
@@ -9,9 +9,8 @@ export function NotesWidget({ refreshKey }: NotesWidgetProps) {
   const [notes, setNotes] = useState<Note[]>([])
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [editDraft, setEditDraft] = useState('')
-  const cancelledEditRef = useRef(false)
+  const [viewingNote, setViewingNote] = useState<Note | null>(null)
+  const [overlayDraft, setOverlayDraft] = useState('')
 
   const loadNotes = useCallback(async () => {
     try {
@@ -48,16 +47,18 @@ export function NotesWidget({ refreshKey }: NotesWidgetProps) {
     }
   }
 
-  const startEdit = (note: Note) => {
-    setEditingId(note.id)
-    setEditDraft(note.text)
+  const openNote = (note: Note) => {
+    setViewingNote(note)
+    setOverlayDraft(note.text)
   }
 
-  const saveEdit = async () => {
-    if (editingId === null) return
-    const id = editingId
-    const text = editDraft
-    setEditingId(null)
+  const closeOverlay = () => setViewingNote(null)
+
+  const saveOverlay = async () => {
+    if (!viewingNote) return
+    const id = viewingNote.id
+    const text = overlayDraft
+    setViewingNote(null)
     if (!text.trim()) return
     try {
       await updateNote(id, text)
@@ -67,21 +68,16 @@ export function NotesWidget({ refreshKey }: NotesWidgetProps) {
     }
   }
 
-  const handleEditKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      event.currentTarget.blur()
-    } else if (event.key === 'Escape') {
-      cancelledEditRef.current = true
-      setEditingId(null)
+  const deleteFromOverlay = async () => {
+    if (!viewingNote) return
+    const id = viewingNote.id
+    setViewingNote(null)
+    try {
+      await deleteNote(id)
+      await loadNotes()
+    } catch {
+      setError("Couldn't delete note.")
     }
-  }
-
-  const handleEditBlur = () => {
-    if (cancelledEditRef.current) {
-      cancelledEditRef.current = false
-      return
-    }
-    saveEdit()
   }
 
   return (
@@ -91,20 +87,9 @@ export function NotesWidget({ refreshKey }: NotesWidgetProps) {
       <ul>
         {notes.map((note) => (
           <li key={note.id} className="notes-item">
-            {editingId === note.id ? (
-              <input
-                className="notes-edit-input"
-                value={editDraft}
-                onChange={(event) => setEditDraft(event.target.value)}
-                onKeyDown={handleEditKeyDown}
-                onBlur={handleEditBlur}
-                autoFocus
-              />
-            ) : (
-              <span className="notes-item__text" onClick={() => startEdit(note)}>
-                {note.text}
-              </span>
-            )}
+            <span className="notes-item__text" onClick={() => openNote(note)}>
+              {note.text}
+            </span>
             <button
               type="button"
               className="notes-item__delete"
@@ -120,6 +105,34 @@ export function NotesWidget({ refreshKey }: NotesWidgetProps) {
         <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Add a note…" />
         <button type="submit">Add</button>
       </form>
+      {viewingNote && (
+        <div className="note-overlay-backdrop" onClick={closeOverlay}>
+          <div className="note-overlay" onClick={(event) => event.stopPropagation()}>
+            <textarea
+              className="note-overlay__textarea"
+              value={overlayDraft}
+              onChange={(event) => setOverlayDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') closeOverlay()
+              }}
+              autoFocus
+            />
+            <div className="note-overlay__actions">
+              <button type="button" className="note-overlay__delete" onClick={deleteFromOverlay}>
+                Delete
+              </button>
+              <div className="note-overlay__actions-right">
+                <button type="button" className="note-overlay__cancel" onClick={closeOverlay}>
+                  Cancel
+                </button>
+                <button type="button" className="note-overlay__save" onClick={saveOverlay}>
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -430,15 +430,87 @@ body {
   color: var(--status-bad);
 }
 
-.notes-edit-input {
-  flex: 1;
+.note-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.note-overlay {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background:
+    linear-gradient(160deg, rgba(255, 250, 240, 0.045) 0%, rgba(255, 250, 240, 0) 42%),
+    var(--bg-lift);
+  border: 1px solid var(--panel-edge);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+}
+
+.note-overlay__textarea {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
   background: rgba(8, 7, 6, 0.55);
   border: 1px solid rgba(var(--accent-rgb), 0.4);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text);
-  padding: 2px 6px;
+  padding: 10px 12px;
   font-family: inherit;
   font-size: 16px;
+  line-height: 1.4;
+}
+
+.note-overlay__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.note-overlay__actions-right {
+  display: flex;
+  gap: 8px;
+}
+
+.note-overlay__delete {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--status-bad);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.note-overlay__cancel {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.note-overlay__save {
+  background: rgba(var(--accent-rgb), 0.9);
+  border: 1px solid rgba(var(--accent-rgb), 0.9);
+  color: #0a0a0a;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
 }
 
 .notes-form {
