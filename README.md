@@ -10,24 +10,24 @@ running natively on a VPS under `systemd --user`.
 ![Dashboard screenshot: chat panel setting a reminder and adding a note, alongside Finance, Stocks, Job Search, and Notes widgets](docs/screenshot.png)
 
 The chat panel here shows the agent handling a real multi-tool request end to
-end — "remind me next Tuesday the project is due, and add a note about it" —
-visibly calling a `cron` tool for the reminder *and* the custom notes MCP tool
-in the same turn, with the new note landing in the Notes widget on the right.
+end: "remind me next Tuesday the project is due, and add a note about it." It
+visibly calls a `cron` tool for the reminder and the custom notes MCP tool in
+the same turn, with the new note landing in the Notes widget on the right.
 
 ## What it does
 
 - **Chat with the agent** over a persistent WebSocket connection into a
   Hermes Agent process (also reachable on Discord), with live streaming
   responses.
-- **Finance** — linked bank accounts via [Plaid](https://plaid.com/), spend
+- **Finance**: linked bank accounts via [Plaid](https://plaid.com/), spend
   charted by category (bar + pie) with a synced backend cache.
-- **Stocks** — live quotes via [Finnhub](https://finnhub.io/), persisted to
+- **Stocks**: live quotes via [Finnhub](https://finnhub.io/), persisted to
   a local store.
-- **Notes** — a lightweight note-taking widget backed by an MCP tool the
+- **Notes**: a lightweight note-taking widget backed by an MCP tool the
   agent itself can call (`add_note`), so notes taken by the agent during a
   conversation show up in the UI immediately.
-- **Daily briefing** — a scheduled summary widget.
-- **OpenRouter usage** — a live spend/credit bar for the model provider
+- **Daily briefing**: a scheduled summary widget.
+- **OpenRouter usage**: a live spend/credit bar for the model provider
   powering the agent.
 
 ## Architecture
@@ -35,40 +35,34 @@ in the same turn, with the new note landing in the Notes widget on the right.
 ```mermaid
 flowchart LR
     FE["React dashboard"]
+    Bridge["bridge"]
+    Agent["Hermes Agent (ACP)"]
+    Finance["finance (Plaid)"]
+    Stocks["stocks (Finnhub)"]
+    Notes["notes (MCP tool)"]
+    Briefing["briefing"]
+    OpenRouter["openrouter"]
 
-    subgraph agent_runtime["Agent runtime"]
-        Bridge["bridge"]
-        Agent["Hermes Agent (ACP)"]
-    end
+    FE -->|WebSocket chat| Bridge
+    Bridge -->|spawns/talks to| Agent
+    Agent -->|MCP tool call| Notes
 
-    subgraph services["Backend services (own process, DB, tests)"]
-        Finance["finance<br/>(Plaid)"]
-        Stocks["stocks<br/>(Finnhub)"]
-        Notes["notes<br/>(MCP tool)"]
-        Briefing["briefing"]
-        OpenRouter["openrouter"]
-    end
-
-    FE -- WebSocket chat --> Bridge
-    Bridge -- spawns/talks to --> Agent
-    Agent -- MCP tool call --> Notes
-
-    FE -- REST --> Finance
-    FE -- REST --> Stocks
-    FE -- REST --> Notes
-    FE -- REST --> Briefing
-    FE -- REST --> OpenRouter
+    FE -->|REST| Finance
+    FE -->|REST| Stocks
+    FE -->|REST| Notes
+    FE -->|REST| Briefing
+    FE -->|REST| OpenRouter
 ```
 
 The frontend talks to each widget's backend directly over REST for its own
 data; the bridge is only for the chat WebSocket into the agent process. The
-agent, in turn, can call back into the Notes service itself via MCP — the
-one path where the agent writes to the dashboard rather than the other way
+agent, in turn, can call back into the Notes service itself via MCP: the one
+path where the agent writes to the dashboard rather than the other way
 around (see the screenshot above).
 
 Each backend service is an independently deployable process (own
 `requirements.txt`, own `systemd` unit, own tests) rather than a shared
-monolith — a bug or redeploy in one widget's service can't take down the
+monolith, so a bug or redeploy in one widget's service can't take down the
 others or the chat bridge.
 
 ## Stack
