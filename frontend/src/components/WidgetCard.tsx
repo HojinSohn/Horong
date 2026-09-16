@@ -6,7 +6,15 @@ export function WidgetCard({ title, lines }: MockWidget) {
       <h2>{title}</h2>
       <ul>
         {lines.map((line) => (
-          <li key={line}>{line}</li>
+          <li key={line.text}>
+            {line.href ? (
+              <a href={line.href} target="_blank" rel="noopener noreferrer">
+                {line.text}
+              </a>
+            ) : (
+              line.text
+            )}
+          </li>
         ))}
       </ul>
     </div>
