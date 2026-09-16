@@ -735,7 +735,8 @@ body {
   cursor: default;
 }
 
-.stock-widget__header {
+.stock-widget__header,
+.widget-card__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;

@@ -6,6 +6,7 @@ export interface MockWidgetLine {
 export interface MockWidget {
   title: string
   lines: MockWidgetLine[]
+  headerLink?: { text: string; href: string }
 }
 
 export const jobWidgets: MockWidget[] = [
@@ -15,6 +16,10 @@ export const jobWidgets: MockWidget[] = [
   },
   {
     title: 'Job Search',
+    headerLink: {
+      text: 'Source ↗',
+      href: 'https://github.com/speedyapply/2027-AI-College-Jobs/blob/main/NEW_GRAD_USA.md',
+    },
     lines: [
       {
         text: 'NVIDIA — AI GPU Power Architect (New Grad 2026), Santa Clara, CA',
