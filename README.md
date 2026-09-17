@@ -16,13 +16,109 @@ the same turn, with the new note landing in the Notes widget on the right.
 
 ## Demo: autonomous bug fix, reported from my phone
 
-**[docs/demo.md](docs/demo.md)** — a step-by-step walkthrough of a real
-exchange with Horong, entirely from the phone app: reporting a bug in one of
-my other automations, watching the agent diagnose the root cause on its own,
-delegate the code fix to Claude Code, recover from an expired auth session
-without help, audit the patch against 246 real emails before trusting it, and
-even patch its own skill/memory afterward so it handles the same class of
-problem better next time.
+This walks through a real exchange with Horong, entirely from the
+phone-installed dashboard app. It shows the agent behind Horong's chat
+diagnosing a bug in one of my other personal automations (an email to Notion
+job-application tracker, not part of this repo), delegating the code fix to
+Claude Code, recovering from an expired auth session on its own, and
+verifying the fix against real historical data before touching production.
+It's a demo of what the agent reachable through Horong's chat can do, not a
+claim that this specific bug's code lives in this repository.
+
+### 1. Report the bug from the phone
+
+![Reporting the bug from the phone](docs/demo/01-report-bug.png)
+
+One line, typed into Horong's chat on my phone: *"Hey something is wrong with
+interview checking with email. I got false notification and updates on notion
+on interview... for job application confirm."* The agent immediately starts
+investigating on its own, reading the classifier source and the cron log.
+
+### 2. Autonomous root-cause diagnosis
+
+![Agent reports the three false positives it found](docs/demo/02-root-cause.png)
+
+Without any further input, the agent finds three real false positives: plain
+application-confirmation emails from Reducto, Atlassian, and SentiLink that
+got misclassified as interview invites.
+
+### 3. Pinpointing the exact cause and deciding to delegate
+
+![Agent shows the exact matched phrases and decides to delegate to Claude Code](docs/demo/03-evidence-and-delegate.png)
+
+The agent digs one level deeper, showing the exact phrase each email matched
+on (an overly generic `invite you to` pattern, and a conditional/hypothetical
+phrase with no guard against it) before deciding this needs a real code fix
+delegated to Claude Code.
+
+### 4. Recovering from an expired session and handing off the fix
+
+![Claude Code re-authenticated, agent hands the fix off](docs/demo/04-claude-code-handoff.png)
+
+Claude Code's login had expired. The agent walked through re-authenticating
+it (an interactive OAuth flow, not shown here) and, once logged in, handed
+the fix spec off to Claude Code as a sub-agent.
+
+### 5. Auditing the patch instead of trusting it
+
+![Agent runs a real audit and catches new false negatives](docs/demo/05-regression-audit.png)
+
+Rather than trusting Claude Code's first patch, the agent replayed the new
+classifier against real inbox mail, and caught real problems: the patch had
+introduced new false negatives (legitimate interview emails now getting
+missed) alongside fixing the original bug.
+
+### 6. Clean sweep across the full inbox history, then the agent improves itself
+
+![Full 246-email replay comes back clean, agent starts cleanup](docs/demo/06-clean-audit.png)
+
+After a second round with Claude Code, a full replay across **246 emails
+spanning the inbox's history plans zero updates**, no remaining false
+positives. The agent then does more than tidy up: the tool calls visible here
+show it patching its own `job-application-tracker` skill with the corrected
+classifier design and the audit methodology it just proved out, and adding a
+durable memory entry recording the Claude Code OAuth re-authentication
+procedure for next time. It isn't just fixing the bug: it's updating its own
+knowledge so this class of problem is handled better in future sessions.
+
+### 7. What was actually wrong, and how it was fixed
+
+![Technical summary of the root cause and the rewritten classifier](docs/demo/07-technical-summary.png)
+
+The agent's own summary of the fix: the original classifier matched
+interview signals on loose phrases with no guard for conditional wording, and
+missed a real rejection outright. The rewrite is a tiered, testable
+`classify_email()` function.
+
+### 8. Repairing the damage already done
+
+![Final summary: Notion records corrected, real entries left untouched](docs/demo/08-notion-fix-final.png)
+
+With the classifier fixed, the agent goes back and repairs the Notion records
+the original bug had already corrupted (SentiLink reverted to Rejected,
+Atlassian's note corrected), while leaving every genuine assessment/interview
+entry untouched. All from one message sent while away from my laptop.
+
+### Autonomous self-healing flow
+
+```mermaid
+graph TD
+    A[Mobile Dashboard] -->|Bug Report| B(Horong Agent)
+    B -->|Triage & Parse Logs| C{Root Cause Diagnosis}
+    C -->|Identify regex flaws| D[Draft Technical Spec]
+
+    D --> E[Claude Code CLI Sub-Agent]
+    E -->|Session Expired| F[Interactive OAuth Recovery]
+    F -->|Auth Token| E
+
+    E -->|Generates Code Patch| G{Empirical Regression Audit}
+    G -->|Fails: Catch False Negatives| H[Draft Refinement Spec]
+    H -->|Re-prompt| E
+
+    G -->|Passes: 246 clean tests| I[Deploy Production Fix]
+    I --> J[Notion API Integration]
+    J -->|Revert Corrupted State| K((System Restored))
+```
 
 ## What it does
 
