@@ -27,7 +27,7 @@ claim that this specific bug's code lives in this repository.
 
 ### 1. Report the bug from the phone
 
-![Reporting the bug from the phone](docs/demo/01-report-bug.png)
+<img src="docs/demo/01-report-bug.png" alt="Reporting the bug from the phone" width="320">
 
 One line, typed into Horong's chat on my phone: *"Hey something is wrong with
 interview checking with email. I got false notification and updates on notion
@@ -36,7 +36,7 @@ investigating on its own, reading the classifier source and the cron log.
 
 ### 2. Autonomous root-cause diagnosis
 
-![Agent reports the three false positives it found](docs/demo/02-root-cause.png)
+<img src="docs/demo/02-root-cause.png" alt="Agent reports the three false positives it found" width="320">
 
 Without any further input, the agent finds three real false positives: plain
 application-confirmation emails from Reducto, Atlassian, and SentiLink that
@@ -44,7 +44,7 @@ got misclassified as interview invites.
 
 ### 3. Pinpointing the exact cause and deciding to delegate
 
-![Agent shows the exact matched phrases and decides to delegate to Claude Code](docs/demo/03-evidence-and-delegate.png)
+<img src="docs/demo/03-evidence-and-delegate.png" alt="Agent shows the exact matched phrases and decides to delegate to Claude Code" width="320">
 
 The agent digs one level deeper, showing the exact phrase each email matched
 on (an overly generic `invite you to` pattern, and a conditional/hypothetical
@@ -53,7 +53,7 @@ delegated to Claude Code.
 
 ### 4. Recovering from an expired session and handing off the fix
 
-![Claude Code re-authenticated, agent hands the fix off](docs/demo/04-claude-code-handoff.png)
+<img src="docs/demo/04-claude-code-handoff.png" alt="Claude Code re-authenticated, agent hands the fix off" width="320">
 
 Claude Code's login had expired. The agent walked through re-authenticating
 it (an interactive OAuth flow, not shown here) and, once logged in, handed
@@ -61,7 +61,7 @@ the fix spec off to Claude Code as a sub-agent.
 
 ### 5. Auditing the patch instead of trusting it
 
-![Agent runs a real audit and catches new false negatives](docs/demo/05-regression-audit.png)
+<img src="docs/demo/05-regression-audit.png" alt="Agent runs a real audit and catches new false negatives" width="320">
 
 Rather than trusting Claude Code's first patch, the agent replayed the new
 classifier against real inbox mail, and caught real problems: the patch had
@@ -70,7 +70,7 @@ missed) alongside fixing the original bug.
 
 ### 6. Clean sweep across the full inbox history, then the agent improves itself
 
-![Full 246-email replay comes back clean, agent starts cleanup](docs/demo/06-clean-audit.png)
+<img src="docs/demo/06-clean-audit.png" alt="Full 246-email replay comes back clean, agent starts cleanup" width="320">
 
 After a second round with Claude Code, a full replay across **246 emails
 spanning the inbox's history plans zero updates**, no remaining false
@@ -83,7 +83,7 @@ knowledge so this class of problem is handled better in future sessions.
 
 ### 7. What was actually wrong, and how it was fixed
 
-![Technical summary of the root cause and the rewritten classifier](docs/demo/07-technical-summary.png)
+<img src="docs/demo/07-technical-summary.png" alt="Technical summary of the root cause and the rewritten classifier" width="320">
 
 The agent's own summary of the fix: the original classifier matched
 interview signals on loose phrases with no guard for conditional wording, and
@@ -92,7 +92,7 @@ missed a real rejection outright. The rewrite is a tiered, testable
 
 ### 8. Repairing the damage already done
 
-![Final summary: Notion records corrected, real entries left untouched](docs/demo/08-notion-fix-final.png)
+<img src="docs/demo/08-notion-fix-final.png" alt="Final summary: Notion records corrected, real entries left untouched" width="320">
 
 With the classifier fixed, the agent goes back and repairs the Notion records
 the original bug had already corrupted (SentiLink reverted to Rejected,
