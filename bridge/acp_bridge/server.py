@@ -51,6 +51,13 @@ async def handle_connection(
                     await prompt_queue.put(message["text"])
                 elif msg_type == "cancel":
                     await session.cancel()
+                elif msg_type == "new_session":
+                    await session.start_new()
+                elif msg_type == "switch_session":
+                    await session.switch_to(message["session_id"])
+                elif msg_type == "list_sessions":
+                    sessions = await session.list_sessions()
+                    await session.updates.put({"type": "session_list", "sessions": sessions})
         finally:
             forwarder.cancel()
             worker.cancel()

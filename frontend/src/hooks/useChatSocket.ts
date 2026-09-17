@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { BridgeToClient } from '../lib/protocol'
+import type { BridgeToClient, SessionListEntry } from '../lib/protocol'
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'thought'
@@ -68,6 +68,7 @@ export function useChatSocket(url: string, onTurnComplete?: () => void) {
   const [messages, setMessages] = useState<TranscriptEntry[]>([])
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting')
   const [pending, setPending] = useState(false)
+  const [sessions, setSessions] = useState<SessionListEntry[]>([])
   const socketRef = useRef<WebSocket | null>(null)
   const onTurnCompleteRef = useRef(onTurnComplete)
   onTurnCompleteRef.current = onTurnComplete
@@ -79,6 +80,10 @@ export function useChatSocket(url: string, onTurnComplete?: () => void) {
     socket.onclose = () => setConnectionState('closed')
     socket.onmessage = (event) => {
       const data: BridgeToClient = JSON.parse(event.data)
+      if (data.type === 'session_list') {
+        setSessions(data.sessions)
+        return
+      }
       // A reply of any kind ends the "waiting for the first chunk" window.
       setPending(false)
       setMessages((prev) => {
@@ -99,8 +104,12 @@ export function useChatSocket(url: string, onTurnComplete?: () => void) {
         if (data.type === 'done') {
           return finalizeStreaming(prev)
         }
-        // data.type === 'error'
-        return [...finalizeStreaming(prev), { role: 'assistant', text: `Error: ${data.message}`, streaming: false }]
+        if (data.type === 'error') {
+          return [...finalizeStreaming(prev), { role: 'assistant', text: `Error: ${data.message}`, streaming: false }]
+        }
+        // Anything else is a frame this client doesn't (yet) know how to
+        // render -- ignore rather than fabricate a fake error bubble for it.
+        return prev
       })
       if (data.type === 'done') {
         onTurnCompleteRef.current?.()
@@ -128,5 +137,35 @@ export function useChatSocket(url: string, onTurnComplete?: () => void) {
     }
   }, [])
 
-  return { messages, connectionState, pending, sendPrompt, cancel }
+  const newSession = useCallback(() => {
+    setMessages([])
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ type: 'new_session' }))
+    }
+  }, [])
+
+  const listSessions = useCallback(() => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ type: 'list_sessions' }))
+    }
+  }, [])
+
+  const switchSession = useCallback((sessionId: string) => {
+    setMessages([])
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ type: 'switch_session', session_id: sessionId }))
+    }
+  }, [])
+
+  return {
+    messages,
+    connectionState,
+    pending,
+    sendPrompt,
+    cancel,
+    sessions,
+    newSession,
+    listSessions,
+    switchSession,
+  }
 }

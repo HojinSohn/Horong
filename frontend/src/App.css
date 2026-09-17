@@ -687,6 +687,73 @@ body {
   color: var(--muted);
 }
 
+.chat-header__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.history-overlay__title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.history-overlay__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-overlay__empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.history-overlay__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-overlay__item:hover {
+  background: rgba(var(--accent-rgb), 0.08);
+  border-color: var(--border);
+}
+
+.history-overlay__item-title {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.history-overlay__item-date {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
 .openrouter-bar {
   display: flex;
   align-items: baseline;

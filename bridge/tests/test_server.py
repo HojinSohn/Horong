@@ -76,3 +76,58 @@ async def test_a_second_prompt_sent_while_one_is_in_flight_is_queued_not_dropped
         {"type": "chunk", "text": "echo: second"},
         {"type": "done"},
     ]
+
+
+@pytest.mark.asyncio
+async def test_new_session_message_starts_a_fresh_session_and_prompts_go_to_it(tmp_path):
+    handler = build_handler(FIXTURE, str(tmp_path))
+    async with serve(handler, "localhost", 0) as server:
+        port = server.sockets[0].getsockname()[1]
+        async with websockets.connect(f"ws://localhost:{port}") as client:
+            await client.send(json.dumps({"type": "new_session"}))
+            await client.send(json.dumps({"type": "prompt", "text": "hi"}))
+            frames = [json.loads(await client.recv()) for _ in range(5)]
+
+    # No reply to "new_session" itself (fire-and-forget); the prompt that
+    # follows still gets a normal turn, on whatever session is now current.
+    assert frames == [
+        {"type": "thought", "text": "thinking about echo"},
+        {"type": "tool_call", "id": "tool-1", "title": "echo_lookup", "kind": "fetch", "status": "in_progress"},
+        {"type": "tool_call", "id": "tool-1", "title": None, "kind": None, "status": "completed"},
+        {"type": "chunk", "text": "echo: hi"},
+        {"type": "done"},
+    ]
+
+
+@pytest.mark.asyncio
+async def test_list_sessions_message_returns_the_session_list(tmp_path):
+    handler = build_handler(FIXTURE, str(tmp_path))
+    async with serve(handler, "localhost", 0) as server:
+        port = server.sockets[0].getsockname()[1]
+        async with websockets.connect(f"ws://localhost:{port}") as client:
+            await client.send(json.dumps({"type": "list_sessions"}))
+            frame = json.loads(await client.recv())
+
+    assert frame == {
+        "type": "session_list",
+        "sessions": [
+            {"id": "fake-session-1", "title": "First chat", "updatedAt": "2026-01-01T00:00:00Z"},
+            {"id": "resumable-session", "title": "Resumed chat", "updatedAt": "2026-01-02T00:00:00Z"},
+        ],
+    }
+
+
+@pytest.mark.asyncio
+async def test_switch_session_message_replays_the_chosen_sessions_history(tmp_path):
+    handler = build_handler(FIXTURE, str(tmp_path))
+    async with serve(handler, "localhost", 0) as server:
+        port = server.sockets[0].getsockname()[1]
+        async with websockets.connect(f"ws://localhost:{port}") as client:
+            await client.send(json.dumps({"type": "switch_session", "session_id": "resumable-session"}))
+            frames = [json.loads(await client.recv()) for _ in range(3)]
+
+    assert frames == [
+        {"type": "user_chunk", "text": "earlier question"},
+        {"type": "chunk", "text": "earlier answer"},
+        {"type": "done"},
+    ]

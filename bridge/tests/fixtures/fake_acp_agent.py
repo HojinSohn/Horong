@@ -5,7 +5,11 @@ so tests can exercise cancellation without a real long-running turn.
 
 load_session succeeds (replaying one canned past turn) for any session_id
 except "unknown-session", which raises -- so tests can exercise both the
-resume-succeeds and resume-fails-falls-back-to-new-session paths."""
+resume-succeeds and resume-fails-falls-back-to-new-session paths.
+
+new_session increments a counter each call ("fake-session-1", "-2", ...) so
+tests can tell a fresh session from a later one on the same connection.
+list_sessions returns two canned entries."""
 from __future__ import annotations
 
 import asyncio
@@ -18,7 +22,14 @@ from acp.helpers import (
     update_tool_call,
     update_user_message_text,
 )
-from acp.schema import InitializeResponse, LoadSessionResponse, NewSessionResponse, PromptResponse
+from acp.schema import (
+    InitializeResponse,
+    ListSessionsResponse,
+    LoadSessionResponse,
+    NewSessionResponse,
+    PromptResponse,
+    SessionInfo,
+)
 from acp.stdio import stdio_streams
 
 
@@ -30,7 +41,23 @@ class FakeAgent:
         return InitializeResponse(protocol_version=protocol_version)
 
     async def new_session(self, cwd: str, mcp_servers=None, **kwargs) -> NewSessionResponse:
-        return NewSessionResponse(session_id="fake-session-1")
+        self._holder["new_session_count"] = self._holder.get("new_session_count", 0) + 1
+        return NewSessionResponse(session_id=f"fake-session-{self._holder['new_session_count']}")
+
+    async def list_sessions(self, cwd: str | None = None, cursor: str | None = None, **kwargs) -> ListSessionsResponse:
+        return ListSessionsResponse(
+            sessions=[
+                SessionInfo(
+                    cwd=cwd or "/tmp", session_id="fake-session-1", title="First chat", updated_at="2026-01-01T00:00:00Z"
+                ),
+                SessionInfo(
+                    cwd=cwd or "/tmp",
+                    session_id="resumable-session",
+                    title="Resumed chat",
+                    updated_at="2026-01-02T00:00:00Z",
+                ),
+            ]
+        )
 
     async def load_session(self, cwd: str, session_id: str, mcp_servers=None, **kwargs) -> LoadSessionResponse:
         if session_id == "unknown-session":

@@ -98,10 +98,21 @@ class HorongClient:
 
 
 class HorongSession:
-    def __init__(self, connection, session_id: str, updates: "asyncio.Queue[dict]") -> None:
+    def __init__(
+        self,
+        connection,
+        session_id: str,
+        updates: "asyncio.Queue[dict]",
+        workspace_dir: str,
+        mcp_servers: list[HttpMcpServer],
+        session_file: str,
+    ) -> None:
         self._connection = connection
         self.session_id = session_id
         self.updates = updates
+        self._workspace_dir = workspace_dir
+        self._mcp_servers = mcp_servers
+        self._session_file = session_file
 
     # `done`-before-final-notification race, and the mitigation below:
     # `acp`'s notification dispatcher runs each incoming `session/update`
@@ -146,11 +157,45 @@ class HorongSession:
         # currently in flight on the same session.
         await self._connection.cancel(session_id=self.session_id)
 
+    async def start_new(self) -> None:
+        """Abandon the current session for a brand-new, empty one -- on the
+        same already-running connection, no need to respawn the subprocess."""
+        new_session = await self._connection.new_session(cwd=self._workspace_dir, mcp_servers=self._mcp_servers)
+        self.session_id = new_session.session_id
+        _write_session_file(self._session_file, self.session_id)
+
+    async def switch_to(self, session_id: str) -> None:
+        """Switch to a specific past session, replaying its history through
+        the same update pipe used for send_prompt/the initial resume. Unlike
+        the initial connect-time resume, a failure here (the id no longer
+        exists) is a real user-facing error, not a silent fallback -- the
+        user picked this specific session from a list."""
+        try:
+            await self._connection.load_session(cwd=self._workspace_dir, session_id=session_id, mcp_servers=self._mcp_servers)
+        except Exception as exc:
+            await self.updates.put({"type": "error", "message": str(exc)})
+            return
+        self.session_id = session_id
+        _write_session_file(self._session_file, session_id)
+        for _ in range(self._NOTIFICATION_DRAIN_TICKS):
+            await asyncio.sleep(0)
+        await self.updates.put({"type": "done"})
+
+    async def list_sessions(self) -> list[dict]:
+        response = await self._connection.list_sessions(cwd=self._workspace_dir)
+        return [
+            {"id": s.session_id, "title": s.title, "updatedAt": s.updated_at} for s in response.sessions
+        ]
+
 
 def _build_mcp_servers(notes_mcp_url: str | None) -> list[HttpMcpServer]:
     if not notes_mcp_url:
         return []
     return [HttpMcpServer(name="dashboard-notes", url=notes_mcp_url, headers=[], type="http")]
+
+
+def _write_session_file(session_file: str, session_id: str) -> None:
+    Path(session_file).write_text(session_id)
 
 
 async def _resume_or_create_session(
@@ -182,7 +227,7 @@ async def _resume_or_create_session(
             return previous_id
 
     new_session = await connection.new_session(cwd=workspace_dir, mcp_servers=mcp_servers)
-    Path(session_file).write_text(new_session.session_id)
+    _write_session_file(session_file, new_session.session_id)
     return new_session.session_id
 
 
@@ -196,6 +241,7 @@ async def open_session(
     updates: "asyncio.Queue[dict]" = asyncio.Queue()
     client = HorongClient(updates)
     session_file = session_file or os.path.join(workspace_dir, ".bridge_session_id")
+    mcp_servers = _build_mcp_servers(notes_mcp_url)
     async with spawn_agent_process(lambda _agent: client, hermes_cmd[0], *hermes_cmd[1:]) as (connection, _process):
         await connection.initialize(
             protocol_version=PROTOCOL_VERSION,
@@ -204,7 +250,5 @@ async def open_session(
                 fs=FileSystemCapabilities(read_text_file=False, write_text_file=False),
             ),
         )
-        session_id = await _resume_or_create_session(
-            connection, workspace_dir, _build_mcp_servers(notes_mcp_url), session_file, updates
-        )
-        yield HorongSession(connection, session_id, updates)
+        session_id = await _resume_or_create_session(connection, workspace_dir, mcp_servers, session_file, updates)
+        yield HorongSession(connection, session_id, updates, workspace_dir, mcp_servers, session_file)

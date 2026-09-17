@@ -5,6 +5,21 @@ import * as briefingApi from '../lib/briefingApi'
 import * as openrouterApi from '../lib/openrouterApi'
 import { ChatPanel } from './ChatPanel'
 
+function mockChatSocket(overrides: Partial<ReturnType<typeof chatSocket.useChatSocket>> = {}) {
+  vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+    messages: [],
+    connectionState: 'open',
+    pending: false,
+    sendPrompt: vi.fn(),
+    cancel: vi.fn(),
+    sessions: [],
+    newSession: vi.fn(),
+    listSessions: vi.fn(),
+    switchSession: vi.fn(),
+    ...overrides,
+  })
+}
+
 describe('ChatPanel', () => {
   beforeEach(() => {
     // ChatPanel renders the OpenRouter usage bar and the Briefing widget
@@ -16,13 +31,7 @@ describe('ChatPanel', () => {
   })
 
   it('renders the Briefing widget', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
-      messages: [],
-      connectionState: 'open',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
-    })
+    mockChatSocket()
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     expect(screen.getByText('Daily Briefing')).toBeInTheDocument()
@@ -30,13 +39,7 @@ describe('ChatPanel', () => {
 
   it('sends the draft on submit and clears the input', () => {
     const sendPrompt = vi.fn()
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
-      messages: [],
-      connectionState: 'open',
-      pending: false,
-      sendPrompt,
-      cancel: vi.fn(),
-    })
+    mockChatSocket({ sendPrompt })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     const input = screen.getByPlaceholderText('Message Horong…') as HTMLInputElement
@@ -48,15 +51,11 @@ describe('ChatPanel', () => {
   })
 
   it('renders streamed messages by role', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+    mockChatSocket({
       messages: [
         { role: 'user', text: 'hi', streaming: false },
         { role: 'assistant', text: 'hello there', streaming: false },
       ],
-      connectionState: 'open',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -65,39 +64,21 @@ describe('ChatPanel', () => {
   })
 
   it('shows "Connecting…" only while never-yet-connected', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
-      messages: [],
-      connectionState: 'connecting',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
-    })
+    mockChatSocket({ connectionState: 'connecting' })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     expect(screen.getByText('Connecting…')).toBeInTheDocument()
   })
 
   it('shows a disconnected message once a connection that was open closes', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
-      messages: [],
-      connectionState: 'closed',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
-    })
+    mockChatSocket({ connectionState: 'closed' })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     expect(screen.getByText('Disconnected — reload the page to reconnect')).toBeInTheDocument()
   })
 
   it('shows a thinking affordance while pending and no chunks have arrived yet', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
-      messages: [{ role: 'user', text: 'hi', streaming: false }],
-      connectionState: 'open',
-      pending: true,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
-    })
+    mockChatSocket({ messages: [{ role: 'user', text: 'hi', streaming: false }], pending: true })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     expect(screen.getByText('Horong is thinking…')).toBeInTheDocument()
@@ -105,13 +86,7 @@ describe('ChatPanel', () => {
 
   it('shows a Stop button while pending, calls cancel when clicked, and hides once not pending', () => {
     const cancel = vi.fn()
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
-      messages: [{ role: 'user', text: 'hi', streaming: false }],
-      connectionState: 'open',
-      pending: true,
-      sendPrompt: vi.fn(),
-      cancel,
-    })
+    mockChatSocket({ messages: [{ role: 'user', text: 'hi', streaming: false }], pending: true, cancel })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
@@ -119,26 +94,14 @@ describe('ChatPanel', () => {
   })
 
   it('does not show a Stop button when not pending', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
-      messages: [],
-      connectionState: 'open',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
-    })
+    mockChatSocket()
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     expect(screen.queryByRole('button', { name: 'Stop' })).not.toBeInTheDocument()
   })
 
   it('renders a thought entry as a collapsible summary with the full text inside', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
-      messages: [{ role: 'thought', text: 'thinking about echo', streaming: false }],
-      connectionState: 'open',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
-    })
+    mockChatSocket({ messages: [{ role: 'thought', text: 'thinking about echo', streaming: false }] })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     expect(screen.getByText('Thinking…')).toBeInTheDocument()
@@ -146,12 +109,8 @@ describe('ChatPanel', () => {
   })
 
   it('renders a tool_call entry as a collapsible summary naming the tool and its status', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+    mockChatSocket({
       messages: [{ role: 'tool_call', id: 'tool-1', title: 'echo_lookup', kind: 'fetch', status: 'completed' }],
-      connectionState: 'open',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -159,12 +118,8 @@ describe('ChatPanel', () => {
   })
 
   it('renders markdown in assistant messages', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+    mockChatSocket({
       messages: [{ role: 'assistant', text: 'Reminder: **deposit return** is due.', streaming: false }],
-      connectionState: 'open',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -173,7 +128,7 @@ describe('ChatPanel', () => {
   })
 
   it('renders a markdown table in assistant messages', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+    mockChatSocket({
       messages: [
         {
           role: 'assistant',
@@ -181,10 +136,6 @@ describe('ChatPanel', () => {
           streaming: false,
         },
       ],
-      connectionState: 'open',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -193,28 +144,19 @@ describe('ChatPanel', () => {
   })
 
   it('renders user messages as plain text, not markdown', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
-      messages: [{ role: 'user', text: 'is **this** bold?', streaming: false }],
-      connectionState: 'open',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
-    })
+    mockChatSocket({ messages: [{ role: 'user', text: 'is **this** bold?', streaming: false }] })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     expect(screen.getByText('is **this** bold?')).toBeInTheDocument()
   })
 
   it('renders a visible error message when a send is dropped while not connected', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
+    mockChatSocket({
       messages: [
         { role: 'user', text: 'hi', streaming: false },
         { role: 'assistant', text: "Error: message wasn't sent — not connected to Horong.", streaming: false },
       ],
       connectionState: 'closed',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
     })
 
     render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
@@ -222,17 +164,54 @@ describe('ChatPanel', () => {
   })
 
   it('renders the OpenRouter usage bar in the footer row, not the header', () => {
-    vi.spyOn(chatSocket, 'useChatSocket').mockReturnValue({
-      messages: [],
-      connectionState: 'open',
-      pending: false,
-      sendPrompt: vi.fn(),
-      cancel: vi.fn(),
-    })
+    mockChatSocket()
 
     const { container } = render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
     const footerRow = container.querySelector('.chat-footer-row')
     expect(footerRow?.querySelector('.openrouter-bar')).not.toBeNull()
     expect(container.querySelector('.chat-header .openrouter-bar')).toBeNull()
+  })
+
+  it('calls newSession and clicking "New chat"', () => {
+    const newSession = vi.fn()
+    mockChatSocket({ newSession })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    fireEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    expect(newSession).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the history panel, requests the session list, and lists entries by title', () => {
+    const listSessions = vi.fn()
+    mockChatSocket({
+      listSessions,
+      sessions: [
+        { id: 'a', title: 'Fix Notion updates', updatedAt: '2026-09-17T16:34:27.902Z' },
+        { id: 'b', title: null, updatedAt: null },
+      ],
+    })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    fireEvent.click(screen.getByRole('button', { name: 'History' }))
+
+    expect(listSessions).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('Fix Notion updates')).toBeInTheDocument()
+    // A session with no title still renders as a pickable entry, not blank.
+    expect(screen.getByText('Untitled session')).toBeInTheDocument()
+  })
+
+  it('switches to the clicked session and closes the history panel', () => {
+    const switchSession = vi.fn()
+    mockChatSocket({
+      switchSession,
+      sessions: [{ id: 'a', title: 'Fix Notion updates', updatedAt: '2026-09-17T16:34:27.902Z' }],
+    })
+
+    render(<ChatPanel wsUrl="ws://bridge.test/ws" />)
+    fireEvent.click(screen.getByRole('button', { name: 'History' }))
+    fireEvent.click(screen.getByText('Fix Notion updates'))
+
+    expect(switchSession).toHaveBeenCalledWith('a')
+    expect(screen.queryByText('Fix Notion updates')).not.toBeInTheDocument()
   })
 })

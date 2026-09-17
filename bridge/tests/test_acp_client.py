@@ -97,3 +97,67 @@ async def test_falls_back_to_a_new_session_when_the_persisted_one_is_unrecognize
 
     assert updates[-2:] == [{"type": "chunk", "text": "echo: hi"}, {"type": "done"}]
     assert session_file.read_text() == "fake-session-1"
+
+
+@pytest.mark.asyncio
+async def test_start_new_abandons_the_current_session_for_a_fresh_one(tmp_path):
+    session_file = tmp_path / "session_id"
+
+    async with open_session(FIXTURE, str(tmp_path), session_file=str(session_file)) as session:
+        assert session.session_id == "fake-session-1"
+
+        await session.start_new()
+
+        assert session.session_id == "fake-session-2"
+        assert session_file.read_text() == "fake-session-2"
+
+
+@pytest.mark.asyncio
+async def test_switch_to_loads_a_specific_session_and_replays_it(tmp_path):
+    session_file = tmp_path / "session_id"
+
+    async with open_session(FIXTURE, str(tmp_path), session_file=str(session_file)) as session:
+        assert session.session_id == "fake-session-1"
+
+        await session.switch_to("resumable-session")
+        updates = await _drain(session, 3)
+
+    assert session.session_id == "resumable-session"
+    assert session_file.read_text() == "resumable-session"
+    assert updates == [
+        {"type": "user_chunk", "text": "earlier question"},
+        {"type": "chunk", "text": "earlier answer"},
+        {"type": "done"},
+    ]
+
+
+@pytest.mark.asyncio
+async def test_switch_to_an_unknown_session_surfaces_a_real_error(tmp_path):
+    session_file = tmp_path / "session_id"
+
+    async with open_session(FIXTURE, str(tmp_path), session_file=str(session_file)) as session:
+        assert session.session_id == "fake-session-1"
+
+        await session.switch_to("unknown-session")
+        update = await asyncio.wait_for(session.updates.get(), timeout=5)
+
+        # Unlike the initial connect-time resume, a failed switch is a real
+        # user-facing error, and the session/file are left unchanged. The ACP
+        # JSON-RPC layer genericizes the agent's raised exception before it
+        # crosses the process boundary (confirmed: not the original message).
+        assert update["type"] == "error"
+        assert update["message"]
+        assert session.session_id == "fake-session-1"
+
+    assert session_file.read_text() == "fake-session-1"
+
+
+@pytest.mark.asyncio
+async def test_list_sessions_returns_the_agents_session_list(tmp_path):
+    async with open_session(FIXTURE, str(tmp_path)) as session:
+        sessions = await session.list_sessions()
+
+    assert sessions == [
+        {"id": "fake-session-1", "title": "First chat", "updatedAt": "2026-01-01T00:00:00Z"},
+        {"id": "resumable-session", "title": "Resumed chat", "updatedAt": "2026-01-02T00:00:00Z"},
+    ]

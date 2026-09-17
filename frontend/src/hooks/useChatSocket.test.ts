@@ -266,6 +266,73 @@ describe('useChatSocket', () => {
     ])
   })
 
+  it('ignores a frame type it does not recognize instead of rendering a fake error', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    act(() => {
+      socket.emitMessage({ type: 'some_future_frame_type', whatever: 'x' })
+    })
+
+    expect(result.current.messages).toEqual([])
+  })
+
+  it('newSession clears the transcript and sends a new_session frame', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    act(() => {
+      socket.emitMessage({ type: 'chunk', text: 'old reply' })
+    })
+    expect(result.current.messages).not.toEqual([])
+
+    act(() => {
+      result.current.newSession()
+    })
+
+    expect(result.current.messages).toEqual([])
+    expect(socket.sent).toEqual([JSON.stringify({ type: 'new_session' })])
+  })
+
+  it('switchSession clears the transcript and sends a switch_session frame with the id', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    act(() => {
+      socket.emitMessage({ type: 'chunk', text: 'old reply' })
+    })
+
+    act(() => {
+      result.current.switchSession('some-session-id')
+    })
+
+    expect(result.current.messages).toEqual([])
+    expect(socket.sent).toEqual([JSON.stringify({ type: 'switch_session', session_id: 'some-session-id' })])
+  })
+
+  it('listSessions sends a list_sessions frame, and the reply populates sessions', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    expect(result.current.sessions).toEqual([])
+
+    act(() => {
+      result.current.listSessions()
+    })
+    expect(socket.sent).toEqual([JSON.stringify({ type: 'list_sessions' })])
+
+    act(() => {
+      socket.emitMessage({
+        type: 'session_list',
+        sessions: [{ id: 'a', title: 'First chat', updatedAt: '2026-01-01T00:00:00Z' }],
+      })
+    })
+
+    expect(result.current.sessions).toEqual([{ id: 'a', title: 'First chat', updatedAt: '2026-01-01T00:00:00Z' }])
+    // A session list reply isn't a chat reply -- it shouldn't touch the transcript.
+    expect(result.current.messages).toEqual([])
+  })
+
   it('invokes onTurnComplete once per done message', () => {
     const onTurnComplete = vi.fn()
     const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws', onTurnComplete))
