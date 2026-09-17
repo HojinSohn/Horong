@@ -16,9 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 async def handle_connection(
-    ws: ServerConnection, hermes_cmd: Sequence[str], workspace_dir: str, notes_mcp_url: str | None = None
+    ws: ServerConnection,
+    hermes_cmd: Sequence[str],
+    workspace_dir: str,
+    notes_mcp_url: str | None = None,
+    session_file: str | None = None,
 ) -> None:
-    async with open_session(hermes_cmd, workspace_dir, notes_mcp_url) as session:
+    async with open_session(hermes_cmd, workspace_dir, notes_mcp_url, session_file) as session:
 
         async def forward_updates() -> None:
             while True:
@@ -56,10 +60,12 @@ async def handle_connection(
                 await worker
 
 
-def build_handler(hermes_cmd: Sequence[str], workspace_dir: str, notes_mcp_url: str | None = None):
+def build_handler(
+    hermes_cmd: Sequence[str], workspace_dir: str, notes_mcp_url: str | None = None, session_file: str | None = None
+):
     async def handler(ws: ServerConnection) -> None:
         try:
-            await handle_connection(ws, hermes_cmd, workspace_dir, notes_mcp_url)
+            await handle_connection(ws, hermes_cmd, workspace_dir, notes_mcp_url, session_file)
         except Exception:
             logger.exception("bridge connection failed")
 
@@ -67,13 +73,18 @@ def build_handler(hermes_cmd: Sequence[str], workspace_dir: str, notes_mcp_url: 
 
 
 async def run_server(
-    host: str, port: int, hermes_cmd: Sequence[str], workspace_dir: str, notes_mcp_url: str | None = None
+    host: str,
+    port: int,
+    hermes_cmd: Sequence[str],
+    workspace_dir: str,
+    notes_mcp_url: str | None = None,
+    session_file: str | None = None,
 ) -> None:
     # Origin check: only the dashboard frontend may open a connection. Without
     # this, any page reachable on the tailnet could open a WebSocket here and
     # drive Horong with auto-approved tool execution as root.
     async with serve(
-        build_handler(hermes_cmd, workspace_dir, notes_mcp_url),
+        build_handler(hermes_cmd, workspace_dir, notes_mcp_url, session_file),
         host,
         port,
         origins=["http://localhost:3000", "http://horong.taila5421b.ts.net:8770"],

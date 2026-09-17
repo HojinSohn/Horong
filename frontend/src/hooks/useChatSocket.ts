@@ -29,7 +29,7 @@ function finalizeStreaming(entries: TranscriptEntry[]): TranscriptEntry[] {
 
 function appendOrAccumulateText(
   entries: TranscriptEntry[],
-  role: 'assistant' | 'thought',
+  role: 'assistant' | 'thought' | 'user',
   text: string,
 ): TranscriptEntry[] {
   const last = entries[entries.length - 1]
@@ -87,6 +87,11 @@ export function useChatSocket(url: string, onTurnComplete?: () => void) {
         }
         if (data.type === 'thought') {
           return appendOrAccumulateText(prev, 'thought', data.text)
+        }
+        if (data.type === 'user_chunk') {
+          // Only ever arrives via a resumed session's history replay, right
+          // after connecting -- a live prompt is appended locally by sendPrompt.
+          return appendOrAccumulateText(prev, 'user', data.text)
         }
         if (data.type === 'tool_call') {
           return upsertToolCall(prev, data)

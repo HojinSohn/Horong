@@ -249,6 +249,23 @@ describe('useChatSocket', () => {
     ])
   })
 
+  it('renders replayed history from a resumed session as user then assistant turns', () => {
+    const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws'))
+    const socket = FakeWebSocket.instances[0]
+
+    // A resumed session replays its history unprompted, right after connecting.
+    act(() => {
+      socket.emitMessage({ type: 'user_chunk', text: 'earlier question' })
+      socket.emitMessage({ type: 'chunk', text: 'earlier answer' })
+      socket.emitMessage({ type: 'done' })
+    })
+
+    expect(result.current.messages).toEqual([
+      { role: 'user', text: 'earlier question', streaming: false },
+      { role: 'assistant', text: 'earlier answer', streaming: false },
+    ])
+  })
+
   it('invokes onTurnComplete once per done message', () => {
     const onTurnComplete = vi.fn()
     const { result } = renderHook(() => useChatSocket('ws://bridge.test/ws', onTurnComplete))

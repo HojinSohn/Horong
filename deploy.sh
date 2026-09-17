@@ -18,7 +18,13 @@ deploy_frontend() {
 deploy_service() {
   local svc="$1"
   echo "==> syncing ${svc} to VPS"
-  scp "${svc}/${svc}_service/server.py" "$HOST:/root/hermes-dashboard-${svc}/${svc}_service/server.py"
+  if [ "$svc" = "bridge" ]; then
+    # bridge's package is acp_bridge/, not bridge_service/, and unlike the
+    # other services its source spans more than one file.
+    rsync -az --exclude '__pycache__' bridge/acp_bridge/ "$HOST:/root/hermes-dashboard-bridge/acp_bridge/"
+  else
+    scp "${svc}/${svc}_service/server.py" "$HOST:/root/hermes-dashboard-${svc}/${svc}_service/server.py"
+  fi
   echo "==> restarting ${svc}"
   ssh "$HOST" "systemctl --user restart hermes-dashboard-${svc}"
 }

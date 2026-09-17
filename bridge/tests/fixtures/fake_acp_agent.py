@@ -1,14 +1,24 @@
 """Minimal ACP agent used only by the bridge's own tests. Echoes the prompt
 text back as a single agent_message_chunk, then ends the turn. A prompt whose
 text is exactly "slow" instead blocks until `cancel` is called (or 5s pass),
-so tests can exercise cancellation without a real long-running turn."""
+so tests can exercise cancellation without a real long-running turn.
+
+load_session succeeds (replaying one canned past turn) for any session_id
+except "unknown-session", which raises -- so tests can exercise both the
+resume-succeeds and resume-fails-falls-back-to-new-session paths."""
 from __future__ import annotations
 
 import asyncio
 
 from acp.agent import AgentSideConnection
-from acp.helpers import start_tool_call, update_agent_message_text, update_agent_thought_text, update_tool_call
-from acp.schema import InitializeResponse, NewSessionResponse, PromptResponse
+from acp.helpers import (
+    start_tool_call,
+    update_agent_message_text,
+    update_agent_thought_text,
+    update_tool_call,
+    update_user_message_text,
+)
+from acp.schema import InitializeResponse, LoadSessionResponse, NewSessionResponse, PromptResponse
 from acp.stdio import stdio_streams
 
 
@@ -21,6 +31,14 @@ class FakeAgent:
 
     async def new_session(self, cwd: str, mcp_servers=None, **kwargs) -> NewSessionResponse:
         return NewSessionResponse(session_id="fake-session-1")
+
+    async def load_session(self, cwd: str, session_id: str, mcp_servers=None, **kwargs) -> LoadSessionResponse:
+        if session_id == "unknown-session":
+            raise ValueError(f"no such session: {session_id}")
+        connection = self._holder["connection"]
+        await connection.session_update(session_id=session_id, update=update_user_message_text("earlier question"))
+        await connection.session_update(session_id=session_id, update=update_agent_message_text("earlier answer"))
+        return LoadSessionResponse()
 
     async def cancel(self, session_id: str, **kwargs) -> None:
         self._holder["cancel_event"].set()

@@ -18,7 +18,8 @@ def main() -> None:
     port = int(os.environ.get("BRIDGE_PORT", "8765"))
     workspace_dir = os.environ.get("BRIDGE_WORKSPACE_DIR", "/root/hermes-workspace")
     notes_mcp_url = os.environ.get("NOTES_MCP_URL", "http://100.109.58.59:8767/mcp")
-    asyncio.run(run_server(host, port, _hermes_cmd(), workspace_dir, notes_mcp_url))
+    session_file = os.environ.get("BRIDGE_SESSION_FILE")
+    asyncio.run(run_server(host, port, _hermes_cmd(), workspace_dir, notes_mcp_url, session_file))
 
 
 if __name__ == "__main__":

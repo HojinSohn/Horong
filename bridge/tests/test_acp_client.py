@@ -9,6 +9,10 @@ from acp_bridge.acp_client import _build_mcp_servers, open_session
 FIXTURE = [sys.executable, str(Path(__file__).parent / "fixtures" / "fake_acp_agent.py")]
 
 
+async def _drain(session, count: int) -> list[dict]:
+    return [await asyncio.wait_for(session.updates.get(), timeout=5) for _ in range(count)]
+
+
 def test_build_mcp_servers_returns_empty_list_when_no_url_configured():
     assert _build_mcp_servers(None) == []
 
@@ -50,3 +54,46 @@ async def test_cancel_stops_an_in_flight_prompt_promptly(tmp_path):
         # send_prompt's own "done" marker, put after the (now-cancelled) prompt() call returns.
         update = await asyncio.wait_for(session.updates.get(), timeout=2)
         assert update == {"type": "done"}
+
+
+@pytest.mark.asyncio
+async def test_first_connection_creates_a_session_and_persists_its_id(tmp_path):
+    session_file = tmp_path / "session_id"
+
+    async with open_session(FIXTURE, str(tmp_path), session_file=str(session_file)) as session:
+        assert session.session_id == "fake-session-1"
+
+    assert session_file.read_text() == "fake-session-1"
+
+
+@pytest.mark.asyncio
+async def test_a_later_connection_resumes_the_persisted_session_and_replays_its_history(tmp_path):
+    session_file = tmp_path / "session_id"
+    session_file.write_text("resumable-session")
+
+    async with open_session(FIXTURE, str(tmp_path), session_file=str(session_file)) as session:
+        assert session.session_id == "resumable-session"
+        updates = await _drain(session, 3)
+
+    assert updates == [
+        {"type": "user_chunk", "text": "earlier question"},
+        {"type": "chunk", "text": "earlier answer"},
+        {"type": "done"},
+    ]
+    # Resuming successfully doesn't need to rewrite the file -- same id either way.
+    assert session_file.read_text() == "resumable-session"
+
+
+@pytest.mark.asyncio
+async def test_falls_back_to_a_new_session_when_the_persisted_one_is_unrecognized(tmp_path):
+    session_file = tmp_path / "session_id"
+    session_file.write_text("unknown-session")
+
+    async with open_session(FIXTURE, str(tmp_path), session_file=str(session_file)) as session:
+        assert session.session_id == "fake-session-1"
+        # No replay frames queued -- a fresh session, same as first-run.
+        await session.send_prompt("hi")
+        updates = await _drain(session, 5)
+
+    assert updates[-2:] == [{"type": "chunk", "text": "echo: hi"}, {"type": "done"}]
+    assert session_file.read_text() == "fake-session-1"
