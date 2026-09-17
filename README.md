@@ -14,6 +14,16 @@ end: "remind me next Tuesday the project is due, and add a note about it." It
 visibly calls a `cron` tool for the reminder and the custom notes MCP tool in
 the same turn, with the new note landing in the Notes widget on the right.
 
+## Demo: autonomous bug fix, reported from my phone
+
+**[docs/demo.md](docs/demo.md)** — a step-by-step walkthrough of a real
+exchange with Horong, entirely from the phone app: reporting a bug in one of
+my other automations, watching the agent diagnose the root cause on its own,
+delegate the code fix to Claude Code, recover from an expired auth session
+without help, audit the patch against 246 real emails before trusting it, and
+even patch its own skill/memory afterward so it handles the same class of
+problem better next time.
+
 ## What it does
 
 - **Chat with the agent** over a persistent WebSocket connection into a
