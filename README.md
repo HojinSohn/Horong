@@ -99,6 +99,18 @@ the original bug had already corrupted (SentiLink reverted to Rejected,
 Atlassian's note corrected), while leaving every genuine assessment/interview
 entry untouched. All from one message sent while away from my laptop.
 
+### 9. The fix shows up as a real Discord notification
+
+<img src="docs/demo/09-discord-notification.png" alt="Discord catch-up notification listing the interview invitations that were silently dropped" width="320">
+
+This is what the Discord side actually looks like: a proactive "Job Tracker
+catch-up" message, unprompted, backfilling the exact interview invitations
+that had been silently dropped by the bug, plus the root cause in plain
+language. Company names are blocked out here for privacy, but the structure
+is real: this is the same Discord delivery path called out under
+[Discord notifications](#what-it-does) above, now carrying the result of a
+bug it fixed on itself.
+
 ### Autonomous self-healing flow
 
 ```mermaid
